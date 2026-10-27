@@ -164,18 +164,26 @@ namespace TF2Crosshairs
         /// <summary>Paints a class-heading row of the weapon list (an item whose Tag is null).</summary>
         public static void DrawHeaderRow(DrawListViewItemEventArgs e)
         {
+            var item = e.Item;
+            if (item == null) return;
             var p = Current;
             var b = e.Bounds;
             using (var fill = new SolidBrush(p.HeaderRow)) e.Graphics.FillRectangle(fill, b);
             using (var pen = new Pen(p.Border)) e.Graphics.DrawLine(pen, b.Left + 4, b.Bottom - 1, b.Right - 4, b.Bottom - 1);
-            using (var bold = new Font(e.Item.Font, FontStyle.Bold))
-                TextRenderer.DrawText(e.Graphics, e.Item.Text, bold, new Rectangle(b.X + 6, b.Y, b.Width - 8, b.Height), p.GroupText,
+            using (var bold = new Font(item.Font, FontStyle.Bold))
+                TextRenderer.DrawText(e.Graphics, item.Text, bold, new Rectangle(b.X + 6, b.Y, b.Width - 8, b.Height), p.GroupText,
                     TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
         }
 
         /// <summary>Paints a ListView column header in the current palette.</summary>
         public static void DrawColumnHeader(DrawListViewColumnHeaderEventArgs e)
         {
+            var header = e.Header;
+            if (header == null)
+            {
+                e.DrawDefault = true;
+                return;
+            }
             var p = Current;
             using (var b = new SolidBrush(p.Panel)) e.Graphics.FillRectangle(b, e.Bounds);
             using (var pen = new Pen(p.Border))
@@ -184,9 +192,9 @@ namespace TF2Crosshairs
                 e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
             }
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix |
-                        (e.Header.TextAlign == HorizontalAlignment.Right ? TextFormatFlags.Right : TextFormatFlags.Left);
+                        (header.TextAlign == HorizontalAlignment.Right ? TextFormatFlags.Right : TextFormatFlags.Left);
             var rect = new Rectangle(e.Bounds.X + 6, e.Bounds.Y, Math.Max(0, e.Bounds.Width - 10), e.Bounds.Height);
-            TextRenderer.DrawText(e.Graphics, e.Header.Text, e.Font ?? SystemFonts.DefaultFont, rect, p.Fore, flags);
+            TextRenderer.DrawText(e.Graphics, header.Text, e.Font ?? SystemFonts.DefaultFont, rect, p.Fore, flags);
         }
     }
 }

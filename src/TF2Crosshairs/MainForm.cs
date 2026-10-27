@@ -208,8 +208,8 @@ namespace TF2Crosshairs
             // class headings are plain rows with a null Tag, painted here; weapons use the default drawing
             weaponList.OwnerDraw = true;
             weaponList.DrawColumnHeader += (s, e) => Theme.DrawColumnHeader(e);
-            weaponList.DrawItem += (s, e) => { if (e.Item.Tag == null) Theme.DrawHeaderRow(e); else e.DrawDefault = true; };
-            weaponList.DrawSubItem += (s, e) => e.DrawDefault = e.Item.Tag != null;
+            weaponList.DrawItem += (s, e) => { if (e.Item?.Tag == null) Theme.DrawHeaderRow(e); else e.DrawDefault = true; };
+            weaponList.DrawSubItem += (s, e) => e.DrawDefault = e.Item?.Tag != null;
             left.Controls.Add(weaponList);
             left.Controls.Add(filterRow);
 
@@ -502,15 +502,15 @@ namespace TF2Crosshairs
         void FillRow(ListViewItem item)
         {
             if (!(item.Tag is WeaponInfo w)) return; // class heading row
-            bool has = assignments.TryGetValue(w.Script, out var a) && FindCrosshair(a.Crosshair) != null;
-            item.ImageKey = has ? a.Crosshair : "none";
+            Assignment? a = assignments.TryGetValue(w.Script, out var found) && FindCrosshair(found.Crosshair) != null ? found : null;
+            item.ImageKey = a != null ? a.Crosshair : "none";
             item.SubItems[0].ForeColor = Theme.Current.Fore;
-            item.SubItems[1].Text = has ? a.Crosshair : StockText;
-            item.SubItems[1].ForeColor = has ? Theme.Current.Fore : Theme.Current.Muted;
-            item.SubItems[2].Text = has ? a.Size.ToString() : "";
+            item.SubItems[1].Text = a != null ? a.Crosshair : StockText;
+            item.SubItems[1].ForeColor = a != null ? Theme.Current.Fore : Theme.Current.Muted;
+            item.SubItems[2].Text = a != null ? a.Size.ToString() : "";
             item.SubItems[2].ForeColor = Theme.Current.Fore;
-            item.SubItems[3].Text = !w.Explosive ? "" : !has ? "" : a.Explosion.Length == 0 ? "Default" : ExplosionEffects.Label(a.Explosion).Replace(" (no smoke)", "");
-            item.SubItems[3].ForeColor = has && !string.IsNullOrEmpty(a.Explosion) ? Theme.Current.Fore : Theme.Current.Muted;
+            item.SubItems[3].Text = !w.Explosive || a == null ? "" : a.Explosion.Length == 0 ? "Default" : ExplosionEffects.Label(a.Explosion).Replace(" (no smoke)", "");
+            item.SubItems[3].ForeColor = a != null && a.Explosion.Length > 0 ? Theme.Current.Fore : Theme.Current.Muted;
         }
 
         void RefreshRows()

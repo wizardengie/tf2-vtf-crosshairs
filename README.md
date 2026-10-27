@@ -10,9 +10,13 @@ and can write the files straight into your TF2 folder.
 
 ## Using it
 
-1. Download `TF2Crosshairs.exe` from the Releases page (or build it, see below).
-   It is a single ~1 MB file and needs nothing installed: it runs on the .NET Framework 4.8
-   that ships with Windows 10 and 11.
+1. Download an exe from the Releases page (or build it, see below). There are two flavours of the
+   same app:
+   - `TF2Crosshairs.exe` (about 50 MB) is self-contained and needs nothing installed on a 64-bit
+     Windows 10 or 11 machine. This is the one to send to friends.
+   - `TF2Crosshairs-slim.exe` (about 1 MB) needs the
+     [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0); if it is missing,
+     Windows shows a prompt with the download link.
 2. Run it. It finds your TF2 folder through Steam. If it cannot, click **Browse...** and pick
    `Steam\steamapps\common\Team Fortress 2`.
 3. Select one or more weapons on the left (Ctrl/Shift-click for several), then click a crosshair
@@ -70,21 +74,22 @@ all-class melee weapons use each class's stock melee script, and so on). Things 
 
 ## Building
 
-You need a .NET SDK (8 or newer; the app itself targets .NET Framework 4.8 and the SDK pulls the
-reference assemblies from NuGet on first build).
+You need the .NET 10 SDK, which comes with Visual Studio 2026 (or install it on its own). The project
+targets `net10.0-windows` and opens in Visual Studio as a normal WinForms project.
 
 ```bat
 build.cmd
 ```
 
-That produces `dist\TF2Crosshairs.exe`. The GitHub Actions workflow builds the same exe on every push
-and attaches it to a release when you push a `v*` tag.
+That publishes both exes into `dist\` (self-contained and framework-dependent, single file each). The
+GitHub Actions workflow does the same on every push and attaches both to a release when you push a
+`v*` tag.
 
 ## Repository layout
 
 | Path | What it is |
 | --- | --- |
-| `src/TF2Crosshairs/` | C# WinForms app. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes. |
+| `src/TF2Crosshairs/` | C# WinForms app on .NET 10. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes. |
 | `assets/crosshairs/*.vtf` | The 98 crosshair textures (Leth's pack, Tob's black brackets, xhairshadow, CPMA, Quake Live) from the cfg.tf repository. |
 | `assets/crosshairs.tsv` | Which pack each texture belongs to (anything unlisted shows up under "Other"). |
 | `assets/scripts/*.txt` | The stock weapon scripts, decrypted from the game's `.ctx` files, used as the base for patching. |

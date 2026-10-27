@@ -20,8 +20,7 @@ namespace TF2Crosshairs
                 return 0;
             }
 
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            ApplicationConfiguration.Initialize(); // DPI mode, visual styles and default font from the project file
             Application.ThreadException += (s, e) => ReportCrash(e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => ReportCrash(e.ExceptionObject as Exception);
             try
