@@ -17,8 +17,9 @@ and can write the files straight into your TF2 folder.
    - `TF2Crosshairs-slim.exe` (about 1 MB) needs the
      [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0); if it is missing,
      Windows shows a prompt with the download link.
-2. Run it. It finds your TF2 folder through Steam. If it cannot, click **Browse...** and pick
-   `Steam\steamapps\common\Team Fortress 2`.
+2. Run it. It finds your TF2 install through Steam and shows the `tf\custom` folder it will install
+   into. If it cannot find it, click **Browse...** and pick
+   `Steam\steamapps\common\Team Fortress 2\tf\custom`.
 3. Select one or more weapons on the left (Ctrl/Shift-click for several), then click a crosshair
    on the right. It is assigned immediately and shown in the preview.
    - **Size** changes how big the crosshair is drawn in game (64 px is what cfg.tf used).

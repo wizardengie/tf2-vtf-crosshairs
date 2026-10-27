@@ -150,7 +150,7 @@ namespace TF2Crosshairs
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tfRow.Controls.Add(new Label { Text = "TF2 folder:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, 0);
+            tfRow.Controls.Add(new Label { Text = "Install folder:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, 0);
             tfBox.Dock = DockStyle.Fill;
             tfRow.Controls.Add(tfBox, 1, 0);
             var browse = new Button { Text = "Browse...", AutoSize = true };
@@ -769,7 +769,7 @@ namespace TF2Crosshairs
         {
             if (tfFolder == null)
             {
-                MessageBox.Show(this, "Pick your Team Fortress 2 folder first (the one that contains tf\\gameinfo.txt).", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(this, "Pick your Team Fortress 2\\tf\\custom folder first.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 BrowseTfFolder();
                 if (tfFolder == null) return;
             }
@@ -840,15 +840,15 @@ namespace TF2Crosshairs
 
         void BrowseTfFolder()
         {
-            using (var dlg = new FolderBrowserDialog { Description = "Select your Team Fortress 2 folder (or the tf folder inside it)", ShowNewFolderButton = false })
+            using (var dlg = new FolderBrowserDialog { Description = "Select your Team Fortress 2\\tf\\custom folder (the tf or Team Fortress 2 folder above it works too)", ShowNewFolderButton = false })
             {
-                if (tfFolder != null) dlg.SelectedPath = tfFolder;
+                if (tfFolder != null) dlg.SelectedPath = Tf2Locator.CustomFolder(tfFolder);
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
                 var tf = Tf2Locator.NormalizeTfFolder(dlg.SelectedPath);
                 if (tf == null)
                 {
-                    MessageBox.Show(this, "That does not look like the TF2 folder. It should contain tf\\gameinfo.txt, for example:\n" +
-                        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(this, "That does not look like a TF2 folder. Pick the tf\\custom folder of your TF2 install, for example:\n" +
+                        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\custom", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
                 tfFolder = tf;
@@ -860,7 +860,7 @@ namespace TF2Crosshairs
 
         void UpdateTfFolderUi()
         {
-            tfBox.Text = tfFolder ?? "(not found - click Browse and pick your Team Fortress 2 folder)";
+            tfBox.Text = tfFolder != null ? Tf2Locator.CustomFolder(tfFolder) : "(not found - click Browse and pick your Team Fortress 2\\tf\\custom folder)";
             tfBox.ForeColor = tfFolder != null ? Theme.Current.Fore : Theme.Current.Warn;
             CheckCrosshairCvar();
         }

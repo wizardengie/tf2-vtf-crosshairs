@@ -63,7 +63,10 @@ namespace TF2Crosshairs
             }
         }
 
-        /// <summary>Accepts either the "tf" folder or the "Team Fortress 2" folder above it. Returns the "tf" folder.</summary>
+        /// <summary>
+        /// Accepts the "tf\custom" folder (where the package is installed), the "tf" folder above it, or the
+        /// "Team Fortress 2" folder above that. Returns the "tf" folder.
+        /// </summary>
         public static string? NormalizeTfFolder(string? path)
         {
             if (string.IsNullOrWhiteSpace(path)) return null;
@@ -71,6 +74,11 @@ namespace TF2Crosshairs
             if (IsTfFolder(p)) return Path.GetFullPath(p);
             string child = Path.Combine(p, "tf");
             if (IsTfFolder(child)) return Path.GetFullPath(child);
+            if (string.Equals(Path.GetFileName(p), "custom", StringComparison.OrdinalIgnoreCase))
+            {
+                string? parent = Path.GetDirectoryName(p);
+                if (IsTfFolder(parent)) return Path.GetFullPath(parent!);
+            }
             return null;
         }
 
