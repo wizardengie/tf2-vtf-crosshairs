@@ -1,0 +1,82 @@
+# Weapon catalog: class <TAB> weapon script <TAB> weapons that use it.
+# Script names come from the game's items_game.txt (item_class) plus the per-class
+# translation TF2 applies (tf_weapon_shotgun -> tf_weapon_shotgun_soldier, saxxy -> each class's stock melee, ...).
+Scout	tf_weapon_scattergun	Scattergun, Force-A-Nature, Back Scatter (+ festive, botkiller and decorated reskins)
+Scout	tf_weapon_soda_popper	Soda Popper
+Scout	tf_weapon_handgun_scout_primary	Shortstop
+Scout	tf_weapon_pep_brawler_blaster	Baby Face's Blaster
+Scout	tf_weapon_pistol_scout	Pistol, C.A.P.P.E.R, Lugermorph (+ decorated reskins)
+Scout	tf_weapon_handgun_scout_secondary	Winger, Pretty Boy's Pocket Pistol
+Scout	tf_weapon_cleaver	Flying Guillotine
+Scout	tf_weapon_lunchbox_drink	Bonk! Atomic Punch, Crit-a-Cola
+Scout	tf_weapon_jar_milk	Mad Milk, Mutated Milk
+Scout	tf_weapon_bat	Bat, Candy Cane, Boston Basher, Sun-on-a-Stick, Fan O'War, Atomizer, Three-Rune Blade, Batsaber, all-class melee (Frying Pan, Saxxy, Conscientious Objector...)
+Scout	tf_weapon_bat_fish	Holy Mackerel, Unarmed Combat
+Scout	tf_weapon_bat_wood	Sandman
+Scout	tf_weapon_bat_giftwrap	Wrap Assassin
+Soldier	tf_weapon_rocketlauncher	Rocket Launcher, Black Box, Original, Liberty Launcher, Beggar's Bazooka, Rocket Jumper (+ reskins)
+Soldier	tf_weapon_rocketlauncher_directhit	Direct Hit
+Soldier	tf_weapon_rocketlauncher_airstrike	Air Strike
+Soldier	tf_weapon_particle_cannon	Cow Mangler 5000
+Soldier	tf_weapon_shotgun_soldier	Shotgun, Reserve Shooter, Panic Attack (+ reskins)
+Soldier	tf_weapon_buff_item	Buff Banner, Battalion's Backup, Concheror
+Soldier	tf_weapon_raygun	Righteous Bison
+Soldier	tf_weapon_parachute_secondary	B.A.S.E. Jumper
+Soldier	tf_weapon_shovel	Shovel, Equalizer, Escape Plan, Pain Train, Market Gardener, Disciplinary Action, all-class melee (Frying Pan, Saxxy...)
+Soldier	tf_weapon_katana	Half-Zatoichi (same script for Soldier and Demoman)
+Pyro	tf_weapon_flamethrower	Flame Thrower, Backburner, Degreaser, Phlogistinator, Rainblower, Nostromo Napalmer (+ reskins)
+Pyro	tf_weapon_rocketlauncher_fireball	Dragon's Fury
+Pyro	tf_weapon_shotgun_pyro	Shotgun, Reserve Shooter, Panic Attack (+ reskins)
+Pyro	tf_weapon_flaregun	Flare Gun, Detonator, Scorch Shot
+Pyro	tf_weapon_flaregun_revenge	Manmelter
+Pyro	tf_weapon_rocketpack	Thermal Thruster
+Pyro	tf_weapon_jar_gas	Gas Passer
+Pyro	tf_weapon_fireaxe	Fire Axe, Axtinguisher, Homewrecker, Maul, Powerjack, Back Scratcher, Sharpened Volcano Fragment, Postal Pummeler, Third Degree, Lollichop, all-class melee (Frying Pan, Saxxy... on Pyro and on Heavy)
+Pyro	tf_weapon_breakable_sign	Neon Annihilator
+Pyro	tf_weapon_slap	Hot Hand
+Demoman	tf_weapon_grenadelauncher	Grenade Launcher, Loch-n-Load, Iron Bomber (+ reskins)
+Demoman	tf_weapon_cannon	Loose Cannon
+Demoman	tf_weapon_pipebomblauncher	Stickybomb Launcher, Scottish Resistance, Sticky Jumper, Quickiebomb Launcher (+ reskins)
+Demoman	tf_weapon_parachute_primary	B.A.S.E. Jumper
+Demoman	tf_weapon_bottle	Bottle, Scottish Handshake, Pain Train, all-class melee (Frying Pan, Saxxy...)
+Demoman	tf_weapon_sword	Eyelander, Scotsman's Skullcutter, Horseless Headless Horsemann's Headtaker, Claidheamh Mòr, Persian Persuader, Nessie's Nine Iron
+Demoman	tf_weapon_stickbomb	Ullapool Caber
+Demoman	tf_weapon_katana	Half-Zatoichi (same script for Soldier and Demoman)
+Heavy	tf_weapon_minigun	Minigun, Natascha, Iron Curtain, Brass Beast, Tomislav, Huo-Long Heater, Deflector (+ reskins)
+Heavy	tf_weapon_shotgun_hwg	Shotgun, Family Business, Panic Attack (+ reskins)
+Heavy	tf_weapon_lunchbox	Sandvich, Dalokohs Bar, Fishcake, Buffalo Steak Sandvich, Robo-Sandvich, Second Banana
+Heavy	tf_weapon_fists	Fists, Killing Gloves of Boxing, Gloves of Running Urgently, Warrior's Spirit, Fists of Steel, Eviction Notice, Apoco-Fists, Holiday Punch, Bread Bite (all-class melee on Heavy uses the Pyro Fire Axe script)
+Engineer	tf_weapon_shotgun_primary	Shotgun, Widowmaker, Panic Attack (+ reskins)
+Engineer	tf_weapon_sentry_revenge	Frontier Justice
+Engineer	tf_weapon_drg_pomson	Pomson 6000
+Engineer	tf_weapon_shotgun_building_rescue	Rescue Ranger
+Engineer	tf_weapon_pistol	Pistol, C.A.P.P.E.R, Lugermorph (+ decorated reskins)
+Engineer	tf_weapon_laser_pointer	Wrangler, Giger Counter
+Engineer	tf_weapon_mechanical_arm	Short Circuit
+Engineer	tf_weapon_wrench	Wrench, Southern Hospitality, Golden Wrench, Jag, Eureka Effect, all-class melee (Frying Pan, Saxxy...)
+Engineer	tf_weapon_robot_arm	Gunslinger
+Engineer	tf_weapon_pda_engineer_build	Build PDA
+Engineer	tf_weapon_pda_engineer_destroy	Destroy PDA
+Engineer	tf_weapon_builder	Toolbox (placing a building)
+Medic	tf_weapon_syringegun_medic	Syringe Gun, Blutsauger, Overdose
+Medic	tf_weapon_crossbow	Crusader's Crossbow
+Medic	tf_weapon_medigun	Medi Gun, Kritzkrieg, Quick-Fix, Vaccinator (+ reskins)
+Medic	tf_weapon_bonesaw	Bonesaw, Ubersaw, Vita-Saw, Amputator, Solemn Vow, all-class melee (Frying Pan, Saxxy...)
+Sniper	tf_weapon_sniperrifle	Sniper Rifle, Sydney Sleeper, Machina, Hitman's Heatmaker, AWPer Hand, Shooting Star (+ reskins)
+Sniper	tf_weapon_sniperrifle_decap	Bazaar Bargain
+Sniper	tf_weapon_sniperrifle_classic	Classic
+Sniper	tf_weapon_compound_bow	Huntsman, Fortified Compound
+Sniper	tf_weapon_smg	SMG (+ reskins)
+Sniper	tf_weapon_charged_smg	Cleaner's Carbine
+Sniper	tf_weapon_jar	Jarate, Self-Aware Beauty Mark
+Sniper	tf_weapon_club	Kukri, Tribalman's Shiv, Bushwacka, Shahanshah, all-class melee (Frying Pan, Saxxy...)
+Spy	tf_weapon_revolver	Revolver, Ambassador, L'Etranger, Enforcer, Diamondback, Big Kill (+ reskins)
+Spy	tf_weapon_knife	Knife, Your Eternal Reward, Conniver's Kunai, Big Earner, Wanga Prick, Sharp Dresser, Spy-cicle, Black Rose, all-class melee
+Spy	tf_weapon_sapper	Sapper, Red-Tape Recorder, Ap-Sap, Snack Attack
+Spy	tf_weapon_pda_spy	Disguise Kit
+Spy	tf_weapon_invis	Invis Watch, Cloak and Dagger, Dead Ringer, Enthusiast's Timepiece, Quäckenbirdt
+All classes	tf_weapon_grapplinghook	Grappling Hook (Mannpower)
+All classes	tf_weapon_passtime_gun	JACK (PASS Time)
+All classes	tf_weapon_spellbook	Spellbook (Halloween magic spells)
+All classes	tf_weapon_parachute	B.A.S.E. Jumper (generic script, normally replaced by the class-specific one)
+All classes	tf_weapon_objectselection	Object selection (internal script)

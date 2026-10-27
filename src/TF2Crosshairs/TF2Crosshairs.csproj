@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- .NET Framework 4.8 ships with Windows 10/11, so the exe runs without installing a runtime. -->
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>TF2Crosshairs</AssemblyName>
+    <RootNamespace>TF2Crosshairs</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>TF2 Weapon Crosshairs</Product>
+    <Description>Assign a VTF crosshair to each Team Fortress 2 weapon.</Description>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Everything the app needs is embedded, so the build output is a single exe. -->
+    <EmbeddedResource Include="..\..\assets\crosshairs\*.vtf" LogicalName="crosshairs/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\assets\scripts\*.txt" LogicalName="scripts/%(Filename)%(Extension)" />
+    <EmbeddedResource Include="..\..\assets\preview_bg.jpg" LogicalName="preview_bg.jpg" />
+    <EmbeddedResource Include="..\..\assets\weapons.tsv" LogicalName="weapons.tsv" />
+    <EmbeddedResource Include="..\..\assets\crosshairs.tsv" LogicalName="crosshairs.tsv" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+</Project>
