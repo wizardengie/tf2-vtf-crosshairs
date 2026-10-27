@@ -27,7 +27,8 @@ and can write the files straight into your TF2 folder.
    otherwise the game keeps drawing that one. The crosshair colour still comes from TF2's normal
    crosshair colour settings.
 
-Your setup is saved automatically and restored the next time you open the app.
+Your setup is saved automatically and restored the next time you open the app. The app starts in dark
+mode; the **Dark mode** checkbox at the top right switches to a light theme and is remembered too.
 
 **Sharing with friends:** either send them the exe, or click **Save ZIP...** and have them extract
 it into `Team Fortress 2\tf\custom` so they end up with `tf\custom\crosshairs`.
@@ -83,7 +84,7 @@ and attaches it to a release when you push a `v*` tag.
 
 | Path | What it is |
 | --- | --- |
-| `src/TF2Crosshairs/` | C# WinForms app. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI. |
+| `src/TF2Crosshairs/` | C# WinForms app. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes. |
 | `assets/crosshairs/*.vtf` | The 98 crosshair textures (Leth's pack, Tob's black brackets, xhairshadow, CPMA, Quake Live) from the cfg.tf repository. |
 | `assets/crosshairs.tsv` | Which pack each texture belongs to (anything unlisted shows up under "Other"). |
 | `assets/scripts/*.txt` | The stock weapon scripts, decrypted from the game's `.ctx` files, used as the base for patching. |

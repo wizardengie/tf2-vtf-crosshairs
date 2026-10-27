@@ -78,8 +78,7 @@ namespace TF2Crosshairs
 
         readonly ListView weaponList = new ListView();
         readonly TextBox filterBox = new TextBox();
-        readonly ListView gallery = new ListView();
-        readonly ImageList galleryImages = new ImageList { ImageSize = new Size(Cell, Cell), ColorDepth = ColorDepth.Depth32Bit };
+        readonly Gallery gallery = new Gallery();
         readonly ImageList smallImages = new ImageList { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
         readonly PreviewPanel preview = new PreviewPanel();
         readonly NumericUpDown sizeBox = new NumericUpDown { Minimum = 8, Maximum = 512, Value = 64, Width = 64 };
@@ -91,6 +90,7 @@ namespace TF2Crosshairs
         readonly Label statusLabel = new Label { AutoSize = true, Padding = new Padding(4, 7, 0, 0) };
         readonly Button installBtn = new Button { Text = "Install into TF2", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
         readonly Button openFolderBtn = new Button { Text = "Open custom folder", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
+        readonly CheckBox darkBox = new CheckBox { Text = "Dark mode", AutoSize = true, Checked = true, Margin = new Padding(10, 5, 0, 0) };
 
         public MainForm()
         {
@@ -107,8 +107,24 @@ namespace TF2Crosshairs
             LoadCustomCrosshairs();
             PopulateGallery();
             PopulateWeapons();
+            darkBox.Checked = profile.Dark;
+            ApplyTheme(profile.Dark);
             RestoreState();
             FormClosing += (s, e) => SaveProfile();
+        }
+
+        void ApplyTheme(bool dark)
+        {
+            Theme.Apply(this, dark ? Theme.DarkPalette : Theme.LightPalette);
+            RefreshRows();
+            UpdateTfFolderUi();
+            Invalidate(true);
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            Theme.ApplyNative(this, Theme.Current);
         }
 
         // ------------------------------------------------------------------ layout
@@ -128,9 +144,10 @@ namespace TF2Crosshairs
             };
             top.Controls.Add(intro);
 
-            var tfRow = new TableLayoutPanel { AutoSize = true, ColumnCount = 4, Dock = DockStyle.Top, Margin = new Padding(0, 6, 0, 0) };
+            var tfRow = new TableLayoutPanel { AutoSize = true, ColumnCount = 5, Dock = DockStyle.Top, Margin = new Padding(0, 6, 0, 0) };
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             tfRow.Controls.Add(new Label { Text = "TF2 folder:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, 0);
@@ -142,6 +159,13 @@ namespace TF2Crosshairs
             var help = new Button { Text = "How it works", AutoSize = true };
             help.Click += (s, e) => ShowHelp();
             tfRow.Controls.Add(help, 3, 0);
+            darkBox.CheckedChanged += (s, e) =>
+            {
+                profile.Dark = darkBox.Checked;
+                ApplyTheme(darkBox.Checked);
+                SaveProfile();
+            };
+            tfRow.Controls.Add(darkBox, 4, 0);
             top.Controls.Add(tfRow);
             warnLabel.Dock = DockStyle.Fill;
             top.Controls.Add(warnLabel);
@@ -159,15 +183,19 @@ namespace TF2Crosshairs
 
             // --- left: weapon list
             var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0) };
-            filterBox.Dock = DockStyle.Top;
+            var filterRow = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Padding = new Padding(0, 0, 0, 4) };
+            filterRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            filterRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            filterRow.Controls.Add(new Label { Text = "Filter:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(4, 6, 6, 0) }, 0, 0);
+            filterBox.Dock = DockStyle.Fill;
             filterBox.TextChanged += (s, e) => PopulateWeapons();
-            SetCueBanner(filterBox, "Filter weapons...");
+            filterRow.Controls.Add(filterBox, 1, 0);
             weaponList.Dock = DockStyle.Fill;
             weaponList.View = View.Details;
             weaponList.FullRowSelect = true;
             weaponList.HideSelection = false;
             weaponList.MultiSelect = true;
-            weaponList.ShowGroups = true;
+            weaponList.ShowGroups = false;
             weaponList.SmallImageList = smallImages;
             weaponList.Columns.Add("Weapon", 390);
             weaponList.Columns.Add("Crosshair", 135);
@@ -176,18 +204,18 @@ namespace TF2Crosshairs
             weaponList.SelectedIndexChanged += (s, e) => OnWeaponSelectionChanged();
             weaponList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) { ClearSelected(); e.Handled = true; } };
             weaponList.Resize += (s, e) => FitWeaponColumn();
+            // the column header is system-drawn in light grey, so paint it ourselves when the theme is dark
+            // class headings are plain rows with a null Tag, painted here; weapons use the default drawing
+            weaponList.OwnerDraw = true;
+            weaponList.DrawColumnHeader += (s, e) => Theme.DrawColumnHeader(e);
+            weaponList.DrawItem += (s, e) => { if (e.Item.Tag == null) Theme.DrawHeaderRow(e); else e.DrawDefault = true; };
+            weaponList.DrawSubItem += (s, e) => e.DrawDefault = e.Item.Tag != null;
             left.Controls.Add(weaponList);
-            left.Controls.Add(filterBox);
+            left.Controls.Add(filterRow);
 
             // --- right: gallery over preview/settings
             gallery.Dock = DockStyle.Fill;
-            gallery.View = View.LargeIcon;
-            gallery.LargeImageList = galleryImages;
-            gallery.MultiSelect = false;
-            gallery.HideSelection = false;
-            gallery.ShowGroups = true;
-            gallery.LabelWrap = true;
-            gallery.SelectedIndexChanged += (s, e) => OnGallerySelectionChanged();
+            gallery.SelectionChanged += (s, e) => OnGallerySelectionChanged();
 
             var settings = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(4) };
             settings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -380,30 +408,19 @@ namespace TF2Crosshairs
             updatingUi = true;
             try
             {
-                gallery.BeginUpdate();
-                gallery.Items.Clear();
-                gallery.Groups.Clear();
-                galleryImages.Images.Clear();
                 smallImages.Images.Clear();
                 smallImages.Images.Add("none", new Bitmap(20, 20, PixelFormat.Format32bppArgb));
 
                 // keep the catalog's pack order, custom crosshairs first
                 var packs = crosshairs.Select(c => c.Pack).Distinct().OrderBy(p => p == "Custom" ? -1 : 0).ToList();
-                var groups = new Dictionary<string, ListViewGroup>();
-                foreach (var p in packs)
-                {
-                    var g = new ListViewGroup(p, p);
-                    groups[p] = g;
-                    gallery.Groups.Add(g);
-                }
-                foreach (var c in crosshairs)
-                {
-                    galleryImages.Images.Add(c.Name, MakeThumb(c.Image, Cell));
-                    smallImages.Images.Add(c.Name, MakeThumb(c.Image, 20));
-                    gallery.Items.Add(new ListViewItem(c.Name, c.Name) { Tag = c, Group = groups[c.Pack], ToolTipText = c.Name + " (" + c.Image.Width + "x" + c.Image.Height + ")" });
-                }
-                gallery.ShowItemToolTips = true;
-                gallery.EndUpdate();
+                var items = new List<GalleryItem>();
+                foreach (var pack in packs)
+                    foreach (var c in crosshairs.Where(x => x.Pack == pack))
+                    {
+                        smallImages.Images.Add(c.Name, MakeThumb(c.Image, 20));
+                        items.Add(new GalleryItem { Name = c.Name, Group = pack, Image = MakeThumb(c.Image, Cell), Tag = c });
+                    }
+                gallery.SetItems(items);
             }
             finally
             {
@@ -439,26 +456,22 @@ namespace TF2Crosshairs
             {
                 weaponList.BeginUpdate();
                 weaponList.Items.Clear();
-                weaponList.Groups.Clear();
                 string filter = filterBox.Text.Trim();
-                var groups = new Dictionary<string, ListViewGroup>();
                 foreach (var g in weapons.Select(w => w.Group).Distinct().OrderBy(GroupRank))
                 {
-                    var lvg = new ListViewGroup(g, g);
-                    groups[g] = lvg;
-                    weaponList.Groups.Add(lvg);
-                }
-                foreach (var w in weapons)
-                {
-                    if (filter.Length > 0 &&
-                        w.Names.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0 &&
-                        w.Script.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0 &&
-                        w.Group.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
-                        continue;
-                    var item = new ListViewItem(new[] { w.Names, "", "", "" }) { Tag = w, Group = groups[w.Group], ToolTipText = w.Names + "\n(" + w.Script + ".txt)", UseItemStyleForSubItems = false };
-                    item.Selected = selected.Contains(w.Script);
-                    weaponList.Items.Add(item);
-                    FillRow(item);
+                    var rows = weapons.Where(w => w.Group == g && (filter.Length == 0 ||
+                        w.Names.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        w.Script.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        w.Group.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+                    if (rows.Count == 0) continue;
+                    weaponList.Items.Add(new ListViewItem(new[] { g, "", "", "" }) { Tag = null, ImageKey = "none" });
+                    foreach (var w in rows)
+                    {
+                        var item = new ListViewItem(new[] { w.Names, "", "", "" }) { Tag = w, ToolTipText = w.Names + "\n(" + w.Script + ".txt)", UseItemStyleForSubItems = false, IndentCount = 1 };
+                        item.Selected = selected.Contains(w.Script);
+                        weaponList.Items.Add(item);
+                        FillRow(item);
+                    }
                 }
                 weaponList.ShowItemToolTips = true;
                 weaponList.EndUpdate();
@@ -488,14 +501,16 @@ namespace TF2Crosshairs
 
         void FillRow(ListViewItem item)
         {
-            var w = (WeaponInfo)item.Tag;
+            if (!(item.Tag is WeaponInfo w)) return; // class heading row
             bool has = assignments.TryGetValue(w.Script, out var a) && FindCrosshair(a.Crosshair) != null;
             item.ImageKey = has ? a.Crosshair : "none";
+            item.SubItems[0].ForeColor = Theme.Current.Fore;
             item.SubItems[1].Text = has ? a.Crosshair : StockText;
-            item.SubItems[1].ForeColor = has ? SystemColors.WindowText : SystemColors.GrayText;
+            item.SubItems[1].ForeColor = has ? Theme.Current.Fore : Theme.Current.Muted;
             item.SubItems[2].Text = has ? a.Size.ToString() : "";
+            item.SubItems[2].ForeColor = Theme.Current.Fore;
             item.SubItems[3].Text = !w.Explosive ? "" : !has ? "" : a.Explosion.Length == 0 ? "Default" : ExplosionEffects.Label(a.Explosion).Replace(" (no smoke)", "");
-            item.SubItems[3].ForeColor = has && !string.IsNullOrEmpty(a.Explosion) ? SystemColors.WindowText : SystemColors.GrayText;
+            item.SubItems[3].ForeColor = has && !string.IsNullOrEmpty(a.Explosion) ? Theme.Current.Fore : Theme.Current.Muted;
         }
 
         void RefreshRows()
@@ -505,9 +520,9 @@ namespace TF2Crosshairs
 
         // ------------------------------------------------------------------ selection handling
 
-        List<WeaponInfo> SelectedWeapons() => weaponList.SelectedItems.Cast<ListViewItem>().Select(i => (WeaponInfo)i.Tag).ToList();
+        List<WeaponInfo> SelectedWeapons() => weaponList.SelectedItems.Cast<ListViewItem>().Select(i => i.Tag as WeaponInfo).Where(w => w != null).Select(w => w!).ToList();
 
-        CrosshairInfo? SelectedCrosshair() => gallery.SelectedItems.Count > 0 ? gallery.SelectedItems[0].Tag as CrosshairInfo : null;
+        CrosshairInfo? SelectedCrosshair() => gallery.SelectedItem?.Tag as CrosshairInfo;
 
         string SelectedExplosionKey => explosionBox.SelectedIndex >= 0 && explosionBox.SelectedIndex < ExplosionEffects.Options.Length
             ? ExplosionEffects.Options[explosionBox.SelectedIndex].Key : "";
@@ -519,18 +534,7 @@ namespace TF2Crosshairs
             explosionBox.SelectedIndex = 0;
         }
 
-        void SelectGalleryItem(string? name)
-        {
-            gallery.SelectedItems.Clear();
-            if (name == null) return;
-            foreach (ListViewItem it in gallery.Items)
-                if (it.Text.Equals(name, StringComparison.OrdinalIgnoreCase))
-                {
-                    it.Selected = true;
-                    it.EnsureVisible();
-                    return;
-                }
-        }
+        void SelectGalleryItem(string? name) => gallery.Select(name);
 
         void OnWeaponSelectionChanged()
         {
@@ -538,6 +542,9 @@ namespace TF2Crosshairs
             updatingUi = true;
             try
             {
+                // class heading rows are not selectable
+                foreach (ListViewItem it in weaponList.SelectedItems.Cast<ListViewItem>().Where(i => i.Tag == null).ToList())
+                    it.Selected = false;
                 var sel = SelectedWeapons();
                 explosionBox.Enabled = sel.Any(w => w.Explosive);
                 var first = sel.FirstOrDefault();
@@ -854,7 +861,7 @@ namespace TF2Crosshairs
         void UpdateTfFolderUi()
         {
             tfBox.Text = tfFolder ?? "(not found - click Browse and pick your Team Fortress 2 folder)";
-            tfBox.ForeColor = tfFolder != null ? SystemColors.WindowText : Color.Firebrick;
+            tfBox.ForeColor = tfFolder != null ? Theme.Current.Fore : Theme.Current.Warn;
             CheckCrosshairCvar();
         }
 
@@ -863,6 +870,7 @@ namespace TF2Crosshairs
             string? value = tfFolder != null ? Tf2Locator.ReadCrosshairFileCvar(tfFolder) : null;
             bool bad = !string.IsNullOrEmpty(value) && value != "\"\"";
             warnLabel.Visible = bad;
+            warnLabel.ForeColor = Theme.Current.Warn;
             if (bad)
                 warnLabel.Text = "Heads-up: your config.cfg has cl_crosshair_file \"" + value + "\". Set the crosshair to None in TF2's options " +
                                  "(or run cl_crosshair_file \"\" in the console) or weapon crosshairs will not show.";
@@ -914,13 +922,5 @@ namespace TF2Crosshairs
                 "How it works", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-        static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, string lParam);
-
-        static void SetCueBanner(TextBox box, string text)
-        {
-            const int EM_SETCUEBANNER = 0x1501;
-            try { SendMessage(box.Handle, EM_SETCUEBANNER, (IntPtr)1, text); } catch { }
-        }
     }
 }
