@@ -27,7 +27,7 @@
     <NoWarn>$(NoWarn);WFO1000</NoWarn>
   </PropertyGroup>
 
-  <!-- Single-file publish settings; pick self-contained or not on the command line (see build.ps1). -->
+  <!-- Single-file publish settings; pick self-contained or not on the command line (see the Building section of the README). -->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

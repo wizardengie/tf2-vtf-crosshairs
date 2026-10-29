@@ -93,12 +93,13 @@ You need the .NET 10 SDK, which comes with Visual Studio 2026 (or install it on 
 targets `net10.0-windows` and opens in Visual Studio as a normal WinForms project.
 
 ```bat
-build.cmd
+dotnet publish src\TF2Crosshairs\TF2Crosshairs.csproj -c Release -r win-x64 --self-contained true -o dist\self-contained
+dotnet publish src\TF2Crosshairs\TF2Crosshairs.csproj -c Release -r win-x64 --self-contained false -o dist\slim
 ```
 
-That publishes both exes into `dist\` (self-contained and framework-dependent, single file each). The
-GitHub Actions workflow does the same on every push and attaches both to a release when you push a
-`v*` tag.
+The first command makes the self-contained exe (about 47 MB), the second the small one that needs the
+.NET 10 Desktop Runtime. The GitHub Actions workflow does the same on every push and attaches both to a
+release when you push a `v*` tag.
 
 ## Repository layout
 
