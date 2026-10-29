@@ -23,9 +23,9 @@ namespace TF2Crosshairs
     {
         const int Tile = 64, CellW = 108, CellH = 98, HeaderH = 30, Pad = 10;
 
-        readonly List<GalleryItem> items = new List<GalleryItem>();
-        readonly List<KeyValuePair<string, Rectangle>> headers = new List<KeyValuePair<string, Rectangle>>();
-        readonly ToolTip tip = new ToolTip();
+        readonly List<GalleryItem> items = [];
+        readonly List<(string Text, Rectangle Bounds)> headers = [];
+        readonly ToolTip tip = new();
         GalleryItem? selected, hover;
 
         public event EventHandler? SelectionChanged;
@@ -39,7 +39,6 @@ namespace TF2Crosshairs
         }
 
         public GalleryItem? SelectedItem => selected;
-        public IReadOnlyList<GalleryItem> Items => items;
 
         public void SetItems(IEnumerable<GalleryItem> newItems)
         {
@@ -85,7 +84,7 @@ namespace TF2Crosshairs
                         if (col > 0) { y += CellH; col = 0; }
                         y += 8;
                     }
-                    headers.Add(new KeyValuePair<string, Rectangle>(it.Group, new Rectangle(Pad, y, Math.Max(100, cols * CellW - Pad), HeaderH)));
+                    headers.Add((it.Group, new Rectangle(Pad, y, Math.Max(100, cols * CellW - Pad), HeaderH)));
                     y += HeaderH;
                     group = it.Group;
                 }
@@ -145,37 +144,38 @@ namespace TF2Crosshairs
             // TextRenderer draws with GDI and ignores Graphics transforms, so scroll by offsetting the rectangles.
             int oy = AutoScrollPosition.Y;
             int top = -oy, bottom = top + ClientSize.Height;
+            bool OnScreen(Rectangle r) => r.Bottom >= top && r.Top <= bottom;
 
             using (var bold = new Font(Font, FontStyle.Bold))
             using (var line = new Pen(p.Border))
             {
-                foreach (var h in headers)
+                foreach (var (text, bounds) in headers)
                 {
-                    if (h.Value.Bottom < top || h.Value.Top > bottom) continue;
-                    var r = h.Value;
+                    if (!OnScreen(bounds)) continue;
+                    var r = bounds;
                     r.Offset(0, oy);
-                    TextRenderer.DrawText(g, h.Key, bold, r, p.GroupText, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+                    TextRenderer.DrawText(g, text, bold, r, p.GroupText, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
                     g.DrawLine(line, r.Left, r.Bottom - 5, r.Right, r.Bottom - 5);
                 }
             }
 
             foreach (var it in items)
             {
-                if (it.Bounds.Bottom < top || it.Bounds.Top > bottom) continue;
+                if (!OnScreen(it.Bounds)) continue;
                 var b = it.Bounds;
                 b.Offset(0, oy);
                 bool sel = ReferenceEquals(it, selected);
                 if (sel || ReferenceEquals(it, hover))
                 {
-                    using (var fill = new SolidBrush(sel ? p.Accent : p.ButtonHover))
-                        g.FillRectangle(fill, new Rectangle(b.X + 2, b.Y, b.Width - 4, b.Height - 2));
+                    using var fill = new SolidBrush(sel ? p.Accent : p.ButtonHover);
+                    g.FillRectangle(fill, new Rectangle(b.X + 2, b.Y, b.Width - 4, b.Height - 2));
                 }
                 var tile = new Rectangle(b.X + (CellW - Tile) / 2, b.Y + 4, Tile, Tile);
                 g.DrawImage(it.Image, tile);
                 if (sel)
                 {
-                    using (var pen = new Pen(Color.White, 2))
-                        g.DrawRectangle(pen, tile.X - 1, tile.Y - 1, tile.Width + 1, tile.Height + 1);
+                    using var pen = new Pen(Color.White, 2);
+                    g.DrawRectangle(pen, tile.X - 1, tile.Y - 1, tile.Width + 1, tile.Height + 1);
                 }
                 var label = new Rectangle(b.X, tile.Bottom + 3, CellW, b.Height - Tile - 8);
                 TextRenderer.DrawText(g, it.Name, Font, label, sel ? Color.White : p.Fore,

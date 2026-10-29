@@ -42,9 +42,8 @@ namespace TF2Crosshairs
             string logPath = "";
             try
             {
-                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TF2Crosshairs");
-                Directory.CreateDirectory(dir);
-                logPath = Path.Combine(dir, "crash.log");
+                Directory.CreateDirectory(Profile.Folder);
+                logPath = Path.Combine(Profile.Folder, "crash.log");
                 File.WriteAllText(logPath, DateTime.Now.ToString("u") + "\r\n" + text);
             }
             catch
@@ -62,23 +61,19 @@ namespace TF2Crosshairs
             var names = Assets.CrosshairNames().ToList();
             const int cols = 10, cell = 96;
             int rows = (names.Count + cols - 1) / cols;
-            using (var sheet = new Bitmap(cols * cell, Math.Max(1, rows) * cell))
-            using (var g = Graphics.FromImage(sheet))
-            using (var font = new Font("Segoe UI", 7f))
+            using var sheet = new Bitmap(cols * cell, Math.Max(1, rows) * cell);
+            using var g = Graphics.FromImage(sheet);
+            using var font = new Font("Segoe UI", 7f);
+            g.Clear(Color.FromArgb(96, 104, 112));
+            for (int i = 0; i < names.Count; i++)
             {
-                g.Clear(Color.FromArgb(96, 104, 112));
-                for (int i = 0; i < names.Count; i++)
-                {
-                    using (var bmp = Vtf.Decode(Assets.Crosshair(names[i])))
-                    {
-                        bmp.Save(Path.Combine(dir, names[i] + ".png"), ImageFormat.Png);
-                        int x = (i % cols) * cell, y = (i / cols) * cell;
-                        g.DrawImage(bmp, x + (cell - bmp.Width) / 2, y + 6 + (64 - bmp.Height) / 2, bmp.Width, bmp.Height);
-                        g.DrawString(names[i], font, Brushes.White, x + 2, y + cell - 16);
-                    }
-                }
-                sheet.Save(Path.Combine(dir, "_sheet.png"), ImageFormat.Png);
+                using var bmp = Vtf.Decode(Assets.Crosshair(names[i]));
+                bmp.Save(Path.Combine(dir, names[i] + ".png"), ImageFormat.Png);
+                int x = (i % cols) * cell, y = (i / cols) * cell;
+                g.DrawImage(bmp, x + (cell - bmp.Width) / 2, y + 6 + (64 - bmp.Height) / 2, bmp.Width, bmp.Height);
+                g.DrawString(names[i], font, Brushes.White, x + 2, y + cell - 16);
             }
+            sheet.Save(Path.Combine(dir, "_sheet.png"), ImageFormat.Png);
         }
     }
 }

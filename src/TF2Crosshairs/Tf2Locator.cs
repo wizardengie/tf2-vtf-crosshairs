@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -34,18 +35,18 @@ namespace TF2Crosshairs
         static IEnumerable<string> SteamRoots()
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var candidates = new[]
-            {
+            string?[] candidates =
+            [
                 ReadRegistry(Registry.CurrentUser, @"Software\Valve\Steam", "SteamPath"),
                 ReadRegistry(Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
                 ReadRegistry(Registry.LocalMachine, @"SOFTWARE\Valve\Steam", "InstallPath"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Steam"),
-            };
+            ];
             foreach (var c in candidates)
             {
                 if (string.IsNullOrEmpty(c)) continue;
-                string p = c!.Replace('/', '\\');
+                string p = c.Replace('/', '\\');
                 if (Directory.Exists(p) && seen.Add(p)) yield return p;
             }
         }
@@ -54,8 +55,8 @@ namespace TF2Crosshairs
         {
             try
             {
-                using (var k = hive.OpenSubKey(key))
-                    return k?.GetValue(name) as string;
+                using var k = hive.OpenSubKey(key);
+                return k?.GetValue(name) as string;
             }
             catch
             {
@@ -70,26 +71,25 @@ namespace TF2Crosshairs
         public static string? NormalizeTfFolder(string? path)
         {
             if (string.IsNullOrWhiteSpace(path)) return null;
-            string p = path!.Trim().TrimEnd('\\', '/');
+            string p = path.Trim().TrimEnd('\\', '/');
             if (IsTfFolder(p)) return Path.GetFullPath(p);
             string child = Path.Combine(p, "tf");
             if (IsTfFolder(child)) return Path.GetFullPath(child);
             if (string.Equals(Path.GetFileName(p), "custom", StringComparison.OrdinalIgnoreCase))
             {
                 string? parent = Path.GetDirectoryName(p);
-                if (IsTfFolder(parent)) return Path.GetFullPath(parent!);
+                if (IsTfFolder(parent)) return Path.GetFullPath(parent);
             }
             return null;
         }
 
-        public static bool IsTfFolder(string? path)
+        public static bool IsTfFolder([NotNullWhen(true)] string? path)
         {
             if (string.IsNullOrEmpty(path)) return false;
-            string p = path!;
             try
             {
-                return File.Exists(Path.Combine(p, "gameinfo.txt")) &&
-                       string.Equals(Path.GetFileName(p.TrimEnd('\\', '/')), "tf", StringComparison.OrdinalIgnoreCase);
+                return File.Exists(Path.Combine(path, "gameinfo.txt")) &&
+                       string.Equals(Path.GetFileName(path.TrimEnd('\\', '/')), "tf", StringComparison.OrdinalIgnoreCase);
             }
             catch
             {

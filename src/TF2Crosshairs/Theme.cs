@@ -17,7 +17,7 @@ namespace TF2Crosshairs
     /// </summary>
     public static class Theme
     {
-        public static readonly Palette DarkPalette = new Palette
+        public static readonly Palette DarkPalette = new()
         {
             Dark = true,
             Bg = Color.FromArgb(32, 32, 34),
@@ -34,7 +34,7 @@ namespace TF2Crosshairs
             HeaderRow = Color.FromArgb(34, 34, 37),
         };
 
-        public static readonly Palette LightPalette = new Palette
+        public static readonly Palette LightPalette = new()
         {
             Dark = false,
             Bg = SystemColors.Control,
@@ -62,58 +62,47 @@ namespace TF2Crosshairs
 
         static void ApplyColors(Control c, Palette p)
         {
+            var border = p.Dark ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
+            var flat = p.Dark ? FlatStyle.Flat : FlatStyle.Standard;
             switch (c)
             {
-                case Form f:
-                    f.BackColor = p.Bg;
-                    f.ForeColor = p.Fore;
-                    break;
                 case ListView lv:
                     lv.BackColor = p.Panel;
                     lv.ForeColor = p.Fore;
-                    lv.BorderStyle = p.Dark ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
+                    lv.BorderStyle = border;
                     break;
                 case TextBox tb:
                     tb.BackColor = p.Input;
                     tb.ForeColor = p.Fore;
-                    tb.BorderStyle = p.Dark ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
+                    tb.BorderStyle = border;
                     break;
                 case NumericUpDown n:
                     n.BackColor = p.Input;
                     n.ForeColor = p.Fore;
-                    n.BorderStyle = p.Dark ? BorderStyle.FixedSingle : BorderStyle.Fixed3D;
+                    n.BorderStyle = border;
                     break;
                 case ComboBox cb:
                     cb.BackColor = p.Input;
                     cb.ForeColor = p.Fore;
-                    cb.FlatStyle = p.Dark ? FlatStyle.Flat : FlatStyle.Standard;
+                    cb.FlatStyle = flat;
                     break;
                 case Button b:
                     b.BackColor = p.Button;
                     b.ForeColor = p.Fore;
-                    b.FlatStyle = p.Dark ? FlatStyle.Flat : FlatStyle.Standard;
+                    b.FlatStyle = flat;
                     b.FlatAppearance.BorderColor = p.Border;
                     b.FlatAppearance.MouseOverBackColor = p.ButtonHover;
                     b.FlatAppearance.MouseDownBackColor = p.Border;
                     b.UseVisualStyleBackColor = !p.Dark;
                     break;
-                case CheckBox ch:
-                    ch.ForeColor = p.Fore;
-                    ch.BackColor = p.Bg;
-                    break;
-                case Label l:
-                    l.ForeColor = p.Fore;
-                    l.BackColor = p.Bg;
-                    break;
-                case PreviewPanel _:
-                case Gallery _:
+                case PreviewPanel or Gallery:
                     break; // paint themselves from Theme.Current
                 case SplitContainer sc:
                     sc.BackColor = p.Bg;
                     sc.Panel1.BackColor = p.Bg;
                     sc.Panel2.BackColor = p.Bg;
                     break;
-                default:
+                default: // the form, labels, the checkbox and the layout panels
                     c.BackColor = p.Bg;
                     c.ForeColor = p.Fore;
                     break;
@@ -147,7 +136,7 @@ namespace TF2Crosshairs
 
         static void WalkNative(Control c, Palette p)
         {
-            if (c.IsHandleCreated && !(c is Form))
+            if (c.IsHandleCreated && c is not Form)
             {
                 try
                 {
@@ -167,12 +156,15 @@ namespace TF2Crosshairs
             var item = e.Item;
             if (item == null) return;
             var p = Current;
+            var g = e.Graphics;
             var b = e.Bounds;
-            using (var fill = new SolidBrush(p.HeaderRow)) e.Graphics.FillRectangle(fill, b);
-            using (var pen = new Pen(p.Border)) e.Graphics.DrawLine(pen, b.Left + 4, b.Bottom - 1, b.Right - 4, b.Bottom - 1);
-            using (var bold = new Font(item.Font, FontStyle.Bold))
-                TextRenderer.DrawText(e.Graphics, item.Text, bold, new Rectangle(b.X + 6, b.Y, b.Width - 8, b.Height), p.GroupText,
-                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            using var fill = new SolidBrush(p.HeaderRow);
+            using var pen = new Pen(p.Border);
+            using var bold = new Font(item.Font, FontStyle.Bold);
+            g.FillRectangle(fill, b);
+            g.DrawLine(pen, b.Left + 4, b.Bottom - 1, b.Right - 4, b.Bottom - 1);
+            TextRenderer.DrawText(g, item.Text, bold, new Rectangle(b.X + 6, b.Y, b.Width - 8, b.Height), p.GroupText,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
         }
 
         /// <summary>Paints a ListView column header in the current palette.</summary>
@@ -185,16 +177,17 @@ namespace TF2Crosshairs
                 return;
             }
             var p = Current;
-            using (var b = new SolidBrush(p.Panel)) e.Graphics.FillRectangle(b, e.Bounds);
-            using (var pen = new Pen(p.Border))
-            {
-                e.Graphics.DrawLine(pen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom);
-                e.Graphics.DrawLine(pen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
-            }
+            var g = e.Graphics;
+            var r = e.Bounds;
+            using var fill = new SolidBrush(p.Panel);
+            using var pen = new Pen(p.Border);
+            g.FillRectangle(fill, r);
+            g.DrawLine(pen, r.Right - 1, r.Top, r.Right - 1, r.Bottom);
+            g.DrawLine(pen, r.Left, r.Bottom - 1, r.Right, r.Bottom - 1);
             var flags = TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix |
                         (header.TextAlign == HorizontalAlignment.Right ? TextFormatFlags.Right : TextFormatFlags.Left);
-            var rect = new Rectangle(e.Bounds.X + 6, e.Bounds.Y, Math.Max(0, e.Bounds.Width - 10), e.Bounds.Height);
-            TextRenderer.DrawText(e.Graphics, header.Text, e.Font ?? SystemFonts.DefaultFont, rect, p.Fore, flags);
+            TextRenderer.DrawText(g, header.Text, e.Font ?? SystemFonts.DefaultFont,
+                new Rectangle(r.X + 6, r.Y, Math.Max(0, r.Width - 10), r.Height), p.Fore, flags);
         }
     }
 }

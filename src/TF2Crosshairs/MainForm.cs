@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -23,74 +24,40 @@ namespace TF2Crosshairs
     {
         public string Name = "";
         public string Pack = "";
-        public byte[] Vtf = new byte[0];
+        public byte[] Vtf = [];
         public Bitmap Image = null!;
         public string? SourcePath;   // set for crosshairs the user imported
     }
 
-    /// <summary>Game screenshot with the chosen crosshair drawn over its centre.</summary>
-    sealed class PreviewPanel : Control
-    {
-        public Image? Background;
-        public Bitmap? Crosshair;
-        public int CrosshairSize = 64;
-        public int Zoom = 1;
-
-        public PreviewPanel()
-        {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
-            BackColor = Color.FromArgb(70, 80, 90);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var g = e.Graphics;
-            g.Clear(BackColor);
-            int cx = Width / 2, cy = Height / 2;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
-            if (Background != null)
-            {
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                int w = Background.Width * Zoom, h = Background.Height * Zoom;
-                g.DrawImage(Background, new Rectangle(cx - w / 2, cy - h / 2, w, h));
-            }
-            if (Crosshair != null)
-            {
-                int s = Math.Max(1, CrosshairSize * Zoom);
-                g.InterpolationMode = s >= Crosshair.Width ? InterpolationMode.NearestNeighbor : InterpolationMode.HighQualityBilinear;
-                g.DrawImage(Crosshair, new Rectangle(cx - s / 2, cy - s / 2, s, s));
-            }
-        }
-    }
-
     public sealed class MainForm : Form
     {
-        static readonly string[] GroupOrder = { "Scout", "Soldier", "Pyro", "Demoman", "Heavy", "Engineer", "Medic", "Sniper", "Spy", "All classes", "Custom" };
+        static readonly string[] GroupOrder = ["Scout", "Soldier", "Pyro", "Demoman", "Heavy", "Engineer", "Medic", "Sniper", "Spy", "All classes", "Custom"];
         const int Cell = 64;
-        const string StockText = "stock";
 
-        readonly List<WeaponInfo> weapons = new List<WeaponInfo>();
-        readonly List<CrosshairInfo> crosshairs = new List<CrosshairInfo>();
-        readonly Dictionary<string, Assignment> assignments = new Dictionary<string, Assignment>(StringComparer.OrdinalIgnoreCase);
+        readonly List<WeaponInfo> weapons = [];
+        readonly List<CrosshairInfo> crosshairs = [];
+        readonly Dictionary<string, Assignment> assignments = new(StringComparer.OrdinalIgnoreCase);
         readonly Profile profile;
         string? tfFolder;
         bool updatingUi;
 
-        readonly WeaponListView weaponList = new WeaponListView();
-        readonly TextBox filterBox = new TextBox();
-        readonly Gallery gallery = new Gallery();
-        readonly ImageList smallImages = new ImageList { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
-        readonly PreviewPanel preview = new PreviewPanel();
-        readonly NumericUpDown sizeBox = new NumericUpDown { Minimum = 8, Maximum = 512, Value = 64, Width = 64 };
-        readonly ComboBox explosionBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 190 };
-        readonly ComboBox zoomBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 64 };
-        readonly Label selectedLabel = new Label { AutoSize = false, Size = new Size(300, 36), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
-        readonly TextBox tfBox = new TextBox { ReadOnly = true };
-        readonly Label warnLabel = new Label { AutoSize = true, ForeColor = Color.Firebrick, Visible = false };
-        readonly Label statusLabel = new Label { AutoSize = true, Padding = new Padding(4, 7, 0, 0) };
-        readonly Button installBtn = new Button { Text = "Install into TF2", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
-        readonly Button openFolderBtn = new Button { Text = "Open custom folder", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
-        readonly CheckBox darkBox = new CheckBox { Text = "Dark mode", AutoSize = true, Checked = true, Margin = new Padding(10, 5, 0, 0) };
+        readonly WeaponListView weaponList = new()
+        {
+            Dock = DockStyle.Fill, View = View.Details, FullRowSelect = true, HideSelection = false,
+            MultiSelect = true, ShowGroups = false, ShowItemToolTips = true,
+        };
+        readonly TextBox filterBox = new() { Dock = DockStyle.Fill };
+        readonly Gallery gallery = new() { Dock = DockStyle.Fill };
+        readonly ImageList smallImages = new() { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
+        readonly PreviewPanel preview = new() { Dock = DockStyle.Fill };
+        readonly NumericUpDown sizeBox = new() { Minimum = 8, Maximum = 512, Value = 64, Width = 64 };
+        readonly ComboBox explosionBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 190 };
+        readonly ComboBox zoomBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 64 };
+        readonly Label selectedLabel = new() { AutoSize = false, Size = new Size(300, 36), Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+        readonly TextBox tfBox = new() { ReadOnly = true, Dock = DockStyle.Fill };
+        readonly Label warnLabel = new() { AutoSize = true, ForeColor = Color.Firebrick, Visible = false, Dock = DockStyle.Fill };
+        readonly Label statusLabel = new() { AutoSize = true, Padding = new Padding(4, 7, 0, 0) };
+        readonly CheckBox darkBox = new() { Text = "Dark mode", AutoSize = true, Checked = true, Margin = new Padding(10, 5, 0, 0) };
 
         public MainForm()
         {
@@ -103,7 +70,8 @@ namespace TF2Crosshairs
 
             profile = SafeLoadProfile();
             BuildLayout();
-            LoadCatalog();
+            LoadWeapons();
+            LoadBundledCrosshairs();
             LoadCustomCrosshairs();
             PopulateGallery();
             PopulateWeapons();
@@ -131,136 +99,11 @@ namespace TF2Crosshairs
 
         void BuildLayout()
         {
-            // --- top: intro + TF2 folder
-            var top = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(10, 8, 10, 4) };
-            top.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            var intro = new Label
-            {
-                AutoSize = true,
-                Dock = DockStyle.Fill,
-                Text = "Pick one or more weapons on the left (click a class name to take the whole class), then click a crosshair on the right to assign it. " +
-                       "Weapons you leave alone keep their stock crosshair. When you are done, click \"Install into TF2\" " +
-                       "(or save a ZIP to share). In TF2 the crosshair must be set to None / cl_crosshair_file \"\" for these to show."
-            };
-            top.Controls.Add(intro);
-
-            var tfRow = new TableLayoutPanel { AutoSize = true, ColumnCount = 5, Dock = DockStyle.Top, Margin = new Padding(0, 6, 0, 0) };
-            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tfRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            tfRow.Controls.Add(new Label { Text = "Install folder:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, 0);
-            tfBox.Dock = DockStyle.Fill;
-            tfRow.Controls.Add(tfBox, 1, 0);
-            var browse = new Button { Text = "Browse...", AutoSize = true };
-            browse.Click += (s, e) => BrowseTfFolder();
-            tfRow.Controls.Add(browse, 2, 0);
-            var help = new Button { Text = "How it works", AutoSize = true };
-            help.Click += (s, e) => ShowHelp();
-            tfRow.Controls.Add(help, 3, 0);
-            darkBox.CheckedChanged += (s, e) =>
-            {
-                profile.Dark = darkBox.Checked;
-                ApplyTheme(darkBox.Checked);
-                SaveProfile();
-            };
-            tfRow.Controls.Add(darkBox, 4, 0);
-            top.Controls.Add(tfRow);
-            warnLabel.Dock = DockStyle.Fill;
-            top.Controls.Add(warnLabel);
-
-            // --- bottom: actions + status
-            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(8, 4, 8, 6), WrapContents = false };
-            installBtn.Click += (s, e) => Install();
-            var zipBtn = new Button { Text = "Save ZIP...", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
-            zipBtn.Click += (s, e) => SaveZip();
-            openFolderBtn.Click += (s, e) => OpenCustomFolder();
-            var resetAllBtn = new Button { Text = "Reset ALL weapons", AutoSize = true, Padding = new Padding(6, 2, 6, 2), Margin = new Padding(14, 3, 3, 3) };
-            resetAllBtn.Click += (s, e) => ClearAll();
-            bottom.Controls.Add(installBtn);
-            bottom.Controls.Add(zipBtn);
-            bottom.Controls.Add(openFolderBtn);
-            bottom.Controls.Add(resetAllBtn);
-            bottom.Controls.Add(statusLabel);
-
-            // --- left: weapon list
-            var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0) };
-            var filterRow = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Padding = new Padding(0, 0, 0, 4) };
-            filterRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            filterRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            filterRow.Controls.Add(new Label { Text = "Filter:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(4, 6, 6, 0) }, 0, 0);
-            filterBox.Dock = DockStyle.Fill;
-            filterBox.TextChanged += (s, e) => PopulateWeapons();
-            filterRow.Controls.Add(filterBox, 1, 0);
-            weaponList.Dock = DockStyle.Fill;
-            weaponList.View = View.Details;
-            weaponList.FullRowSelect = true;
-            weaponList.HideSelection = false;
-            weaponList.MultiSelect = true;
-            weaponList.ShowGroups = false;
-            weaponList.SmallImageList = smallImages;
-            weaponList.Columns.Add("Weapon", 390);
-            weaponList.Columns.Add("Crosshair", 135);
-            weaponList.Columns.Add("Size", 40, HorizontalAlignment.Right);
-            weaponList.Columns.Add("Explosion", 100);
-            weaponList.SelectedIndexChanged += (s, e) => OnWeaponSelectionChanged();
-            weaponList.HeadingClicked += SelectClass;
-            weaponList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) { ClearSelected(); e.Handled = true; } };
-            weaponList.Resize += (s, e) => FitWeaponColumn();
-            // the column header is system-drawn in light grey, so paint it ourselves when the theme is dark
-            // class headings are plain rows with a null Tag, painted here; weapons use the default drawing
-            weaponList.OwnerDraw = true;
-            weaponList.DrawColumnHeader += (s, e) => Theme.DrawColumnHeader(e);
-            weaponList.DrawItem += (s, e) => { if (e.Item?.Tag == null) Theme.DrawHeaderRow(e); else e.DrawDefault = true; };
-            weaponList.DrawSubItem += (s, e) => e.DrawDefault = e.Item?.Tag != null;
-            left.Controls.Add(weaponList);
-            left.Controls.Add(filterRow);
-
-            // --- right: gallery over preview/settings
-            gallery.Dock = DockStyle.Fill;
+            var top = BuildTopBar();
+            var bottom = BuildBottomBar();
+            var left = BuildWeaponPanel();
             gallery.SelectionChanged += (s, e) => OnGallerySelectionChanged();
-
-            var settings = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(4) };
-            settings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            preview.Dock = DockStyle.Fill;
-            preview.Background = Assets.PreviewBackground();
-            settings.Controls.Add(preview, 0, 0);
-
-            var side = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Dock = DockStyle.Top, Margin = new Padding(8, 0, 0, 0) };
-            side.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            side.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            int row = 0;
-            side.Controls.Add(selectedLabel, 0, row);
-            side.SetColumnSpan(selectedLabel, 2);
-            row++;
-            side.Controls.Add(new Label { Text = "Size (px):", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, row);
-            sizeBox.ValueChanged += (s, e) => OnSizeChanged();
-            side.Controls.Add(sizeBox, 1, row++);
-            side.Controls.Add(new Label { Text = "Explosion:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, row);
-            foreach (var o in ExplosionEffects.Options) explosionBox.Items.Add(o.Value);
-            explosionBox.SelectedIndex = 0;
-            explosionBox.Enabled = false;
-            explosionBox.SelectedIndexChanged += (s, e) => OnExplosionChanged();
-            side.Controls.Add(explosionBox, 1, row++);
-            side.Controls.Add(new Label { Text = "Preview zoom:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) }, 0, row);
-            zoomBox.Items.AddRange(new object[] { "1x", "2x", "3x", "4x" });
-            zoomBox.SelectedIndex = 1;
-            zoomBox.SelectedIndexChanged += (s, e) => { preview.Zoom = zoomBox.SelectedIndex + 1; preview.Invalidate(); };
-            side.Controls.Add(zoomBox, 1, row++);
-
-            var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, Margin = new Padding(0, 8, 0, 0) };
-            var applyAll = new Button { Text = "Use this crosshair for ALL weapons", AutoSize = true };
-            applyAll.Click += (s, e) => ApplyToAll();
-            var clearSel = new Button { Text = "Reset selected weapons to stock", AutoSize = true };
-            clearSel.Click += (s, e) => ClearSelected();
-            var addCustom = new Button { Text = "Add custom crosshair (.vtf)...", AutoSize = true };
-            addCustom.Click += (s, e) => AddCustomCrosshairs();
-            foreach (var b in new[] { applyAll, clearSel, addCustom }) { b.Width = 230; b.Margin = new Padding(0, 2, 0, 2); buttons.Controls.Add(b); }
-            side.Controls.Add(buttons, 0, row);
-            side.SetColumnSpan(buttons, 2);
-            settings.Controls.Add(side, 1, 0);
+            var settings = BuildSettingsPanel();
 
             var rightSplit = new SplitContainer { Dock = DockStyle.Fill, Orientation = Orientation.Horizontal, SplitterWidth = 6 };
             rightSplit.Panel1.Controls.Add(gallery);
@@ -292,15 +135,147 @@ namespace TF2Crosshairs
             };
         }
 
+        /// <summary>Intro text, the install folder row and the cl_crosshair_file warning.</summary>
+        Control BuildTopBar()
+        {
+            var top = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(10, 8, 10, 4) };
+            AddColumns(top, SizeType.Percent);
+            top.Controls.Add(new Label
+            {
+                AutoSize = true,
+                Dock = DockStyle.Fill,
+                Text = "Pick one or more weapons on the left (click a class name to take the whole class), then click a crosshair on the right to assign it. " +
+                       "Weapons you leave alone keep their stock crosshair. When you are done, click \"Install into TF2\" " +
+                       "(or save a ZIP to share). In TF2 the crosshair must be set to None / cl_crosshair_file \"\" for these to show."
+            });
+
+            var tfRow = new TableLayoutPanel { AutoSize = true, ColumnCount = 5, Dock = DockStyle.Top, Margin = new Padding(0, 6, 0, 0) };
+            AddColumns(tfRow, SizeType.AutoSize, SizeType.Percent, SizeType.AutoSize, SizeType.AutoSize, SizeType.AutoSize);
+            darkBox.CheckedChanged += (s, e) =>
+            {
+                profile.Dark = darkBox.Checked;
+                ApplyTheme(darkBox.Checked);
+                SaveProfile();
+            };
+            AddCells(tfRow, 0, Caption("Install folder:"), tfBox, MakeButton("Browse...", BrowseTfFolder), MakeButton("How it works", ShowHelp), darkBox);
+            top.Controls.Add(tfRow);
+            top.Controls.Add(warnLabel);
+            return top;
+        }
+
+        /// <summary>Install / ZIP / folder / reset buttons and the status text.</summary>
+        Control BuildBottomBar()
+        {
+            var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(8, 4, 8, 6), WrapContents = false };
+            var resetAllBtn = MakeButton("Reset ALL weapons", ClearAll, padded: true);
+            resetAllBtn.Margin = new Padding(14, 3, 3, 3);
+            bottom.Controls.Add(MakeButton("Install into TF2", Install, padded: true));
+            bottom.Controls.Add(MakeButton("Save ZIP...", SaveZip, padded: true));
+            bottom.Controls.Add(MakeButton("Open custom folder", OpenCustomFolder, padded: true));
+            bottom.Controls.Add(resetAllBtn);
+            bottom.Controls.Add(statusLabel);
+            return bottom;
+        }
+
+        /// <summary>Filter box over the weapon list.</summary>
+        Control BuildWeaponPanel()
+        {
+            var left = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0) };
+            var filterRow = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Padding = new Padding(0, 0, 0, 4) };
+            AddColumns(filterRow, SizeType.AutoSize, SizeType.Percent);
+            filterBox.TextChanged += (s, e) => PopulateWeapons();
+            AddCells(filterRow, 0, Caption("Filter:", left: 4), filterBox);
+            weaponList.SmallImageList = smallImages;
+            weaponList.Columns.Add("Weapon", 390);
+            weaponList.Columns.Add("Crosshair", 135);
+            weaponList.Columns.Add("Size", 40, HorizontalAlignment.Right);
+            weaponList.Columns.Add("Explosion", 100);
+            weaponList.SelectedIndexChanged += (s, e) => OnWeaponSelectionChanged();
+            weaponList.HeadingClicked += SelectClass;
+            weaponList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) { ClearSelected(); e.Handled = true; } };
+            weaponList.Resize += (s, e) => FitWeaponColumn();
+            // the column header is system-drawn in light grey, so paint it ourselves when the theme is dark
+            // class headings are plain rows with a null Tag, painted here; weapons use the default drawing
+            weaponList.OwnerDraw = true;
+            weaponList.DrawColumnHeader += (s, e) => Theme.DrawColumnHeader(e);
+            weaponList.DrawItem += (s, e) => { if (e.Item?.Tag == null) Theme.DrawHeaderRow(e); else e.DrawDefault = true; };
+            weaponList.DrawSubItem += (s, e) => e.DrawDefault = e.Item?.Tag != null;
+            left.Controls.Add(weaponList);
+            left.Controls.Add(filterRow);
+            return left;
+        }
+
+        /// <summary>The preview with the size / explosion / zoom settings and the crosshair buttons beside it.</summary>
+        Control BuildSettingsPanel()
+        {
+            var settings = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Padding = new Padding(4) };
+            AddColumns(settings, SizeType.Percent, SizeType.AutoSize);
+            preview.Background = Assets.PreviewBackground();
+            settings.Controls.Add(preview, 0, 0);
+
+            var side = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Dock = DockStyle.Top, Margin = new Padding(8, 0, 0, 0) };
+            AddColumns(side, SizeType.AutoSize, SizeType.AutoSize);
+            side.Controls.Add(selectedLabel, 0, 0);
+            side.SetColumnSpan(selectedLabel, 2);
+            sizeBox.ValueChanged += (s, e) => OnSizeChanged();
+            AddCells(side, 1, Caption("Size (px):"), sizeBox);
+            foreach (var o in ExplosionEffects.Options) explosionBox.Items.Add(o.Value);
+            explosionBox.SelectedIndex = 0;
+            explosionBox.Enabled = false;
+            explosionBox.SelectedIndexChanged += (s, e) => OnExplosionChanged();
+            AddCells(side, 2, Caption("Explosion:"), explosionBox);
+            zoomBox.Items.AddRange(["1x", "2x", "3x", "4x"]);
+            zoomBox.SelectedIndex = 1;
+            zoomBox.SelectedIndexChanged += (s, e) => { preview.Zoom = zoomBox.SelectedIndex + 1; preview.Invalidate(); };
+            AddCells(side, 3, Caption("Preview zoom:"), zoomBox);
+
+            var buttons = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.TopDown, Margin = new Padding(0, 8, 0, 0) };
+            foreach (var b in new[]
+            {
+                MakeButton("Use this crosshair for ALL weapons", ApplyToAll),
+                MakeButton("Reset selected weapons to stock", ClearSelected),
+                MakeButton("Add custom crosshair (.vtf)...", AddCustomCrosshairs),
+            })
+            {
+                b.Width = 230;
+                b.Margin = new Padding(0, 2, 0, 2);
+                buttons.Controls.Add(b);
+            }
+            side.Controls.Add(buttons, 0, 4);
+            side.SetColumnSpan(buttons, 2);
+            settings.Controls.Add(side, 1, 0);
+            return settings;
+        }
+
+        static Label Caption(string text, int left = 0) =>
+            new() { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(left, 6, 6, 0) };
+
+        static Button MakeButton(string text, Action onClick, bool padded = false)
+        {
+            var b = new Button { Text = text, AutoSize = true };
+            if (padded) b.Padding = new Padding(6, 2, 6, 2);
+            b.Click += (s, e) => onClick();
+            return b;
+        }
+
+        /// <summary>One column style per entry: a Percent column takes all the spare width, AutoSize ones fit their content.</summary>
+        static void AddColumns(TableLayoutPanel table, params SizeType[] sizes)
+        {
+            foreach (var size in sizes)
+                table.ColumnStyles.Add(size == SizeType.Percent ? new ColumnStyle(SizeType.Percent, 100) : new ColumnStyle(size));
+        }
+
+        static void AddCells(TableLayoutPanel table, int row, params Control[] cells)
+        {
+            for (int col = 0; col < cells.Length; col++) table.Controls.Add(cells[col], col, row);
+        }
+
         // ------------------------------------------------------------------ data
 
-        void LoadCatalog()
+        void LoadWeapons()
         {
-            foreach (var raw in Assets.Text("weapons.tsv").Split('\n'))
+            foreach (var parts in Assets.TsvRows(Assets.Text("weapons.tsv")))
             {
-                string line = raw.TrimEnd('\r');
-                if (line.Length == 0 || line.StartsWith("#")) continue;
-                var parts = line.Split('\t');
                 if (parts.Length < 3 || !Assets.HasScript(parts[1])) continue;
                 weapons.Add(new WeaponInfo
                 {
@@ -310,14 +285,14 @@ namespace TF2Crosshairs
                     Explosive = Packager.IsExplosive(Assets.Script(parts[1]))
                 });
             }
+        }
 
+        void LoadBundledCrosshairs()
+        {
             var packs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var order = new List<string>();
-            foreach (var raw in Assets.Text("crosshairs.tsv").Split('\n'))
+            foreach (var parts in Assets.TsvRows(Assets.Text("crosshairs.tsv")))
             {
-                string line = raw.TrimEnd('\r');
-                if (line.Length == 0 || line.StartsWith("#")) continue;
-                var parts = line.Split('\t');
                 if (parts.Length < 2) continue;
                 packs[parts[0]] = parts[1];
                 order.Add(parts[0]);
@@ -331,7 +306,7 @@ namespace TF2Crosshairs
                 byte[] vtf = Assets.Crosshair(name);
                 try
                 {
-                    crosshairs.Add(new CrosshairInfo { Name = name, Pack = packs.TryGetValue(name, out var p) ? p : "Other", Vtf = vtf, Image = Vtf.Decode(vtf) });
+                    crosshairs.Add(new CrosshairInfo { Name = name, Pack = packs.GetValueOrDefault(name, "Other"), Vtf = vtf, Image = Vtf.Decode(vtf) });
                 }
                 catch (Exception)
                 {
@@ -343,24 +318,25 @@ namespace TF2Crosshairs
         void LoadCustomCrosshairs()
         {
             var missing = new List<string>();
-            foreach (var kv in profile.CustomCrosshairs.ToList())
+            foreach (var (name, path) in profile.CustomCrosshairs)
             {
                 try
                 {
-                    if (!File.Exists(kv.Value)) { missing.Add(kv.Key); continue; }
-                    var bytes = File.ReadAllBytes(kv.Value);
-                    AddCrosshair(kv.Key, bytes, Vtf.Decode(bytes), kv.Value);
+                    if (!File.Exists(path)) { missing.Add(name); continue; }
+                    var bytes = File.ReadAllBytes(path);
+                    AddCustomCrosshair(name, bytes, Vtf.Decode(bytes), path);
                 }
                 catch (Exception)
                 {
-                    missing.Add(kv.Key);
+                    missing.Add(name);
                 }
             }
             if (missing.Count > 0)
                 SetStatus("Could not reload custom crosshair(s): " + string.Join(", ", missing));
         }
 
-        CrosshairInfo AddCrosshair(string name, byte[] vtf, Bitmap image, string? sourcePath)
+        /// <summary>Adds an imported crosshair, or replaces the texture of the one with that name.</summary>
+        void AddCustomCrosshair(string name, byte[] vtf, Bitmap image, string sourcePath)
         {
             var existing = crosshairs.FirstOrDefault(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (existing != null)
@@ -369,11 +345,9 @@ namespace TF2Crosshairs
                 existing.Image.Dispose();
                 existing.Image = image;
                 existing.SourcePath = sourcePath;
-                return existing;
+                return;
             }
-            var info = new CrosshairInfo { Name = name, Pack = sourcePath != null ? "Custom" : "Other", Vtf = vtf, Image = image, SourcePath = sourcePath };
-            crosshairs.Add(info);
-            return info;
+            crosshairs.Add(new CrosshairInfo { Name = name, Pack = "Custom", Vtf = vtf, Image = image, SourcePath = sourcePath });
         }
 
         CrosshairInfo? FindCrosshair(string? name) =>
@@ -384,18 +358,17 @@ namespace TF2Crosshairs
             tfFolder = Tf2Locator.NormalizeTfFolder(profile.TfFolder) ?? Tf2Locator.FindTfFolder();
             UpdateTfFolderUi();
 
-            var source = profile.Assignments.ToList();
+            var source = profile.Assignments;
             if (source.Count == 0 && tfFolder != null)
             {
                 // Nothing saved yet: pick up whatever this app (or an earlier run) installed last time.
-                string manifest = Path.Combine(Tf2Locator.CustomFolder(tfFolder), Packager.FolderName, Packager.ManifestName);
+                string manifest = Packager.ManifestPath(Tf2Locator.CustomFolder(tfFolder));
                 try { if (File.Exists(manifest)) source = Packager.ParseManifest(File.ReadAllText(manifest)); } catch { }
             }
             foreach (var a in source)
             {
-                if (!weapons.Any(w => w.Script.Equals(a.Script, StringComparison.OrdinalIgnoreCase))) continue;
-                if (FindCrosshair(a.Crosshair) == null) continue;
-                var w = weapons.First(x => x.Script.Equals(a.Script, StringComparison.OrdinalIgnoreCase));
+                var w = weapons.FirstOrDefault(x => x.Script.Equals(a.Script, StringComparison.OrdinalIgnoreCase));
+                if (w == null || FindCrosshair(a.Crosshair) == null) continue;
                 if (!w.Explosive) a.Explosion = "";
                 assignments[a.Script] = a.Clone();
             }
@@ -405,83 +378,67 @@ namespace TF2Crosshairs
 
         // ------------------------------------------------------------------ list population
 
-        void PopulateGallery()
+        void PopulateGallery() => WithoutEvents(() =>
         {
-            updatingUi = true;
-            try
-            {
-                smallImages.Images.Clear();
-                smallImages.Images.Add("none", new Bitmap(20, 20, PixelFormat.Format32bppArgb));
+            smallImages.Images.Clear();
+            smallImages.Images.Add("none", new Bitmap(20, 20, PixelFormat.Format32bppArgb));
 
-                // keep the catalog's pack order, custom crosshairs first
-                var packs = crosshairs.Select(c => c.Pack).Distinct().OrderBy(p => p == "Custom" ? -1 : 0).ToList();
-                var items = new List<GalleryItem>();
-                foreach (var pack in packs)
-                    foreach (var c in crosshairs.Where(x => x.Pack == pack))
-                    {
-                        smallImages.Images.Add(c.Name, MakeThumb(c.Image, 20));
-                        items.Add(new GalleryItem { Name = c.Name, Group = pack, Image = MakeThumb(c.Image, Cell), Tag = c });
-                    }
-                gallery.SetItems(items);
-            }
-            finally
+            // keep the catalog's pack order, custom crosshairs first
+            var items = new List<GalleryItem>();
+            foreach (var c in crosshairs.GroupBy(c => c.Pack).OrderBy(g => g.Key == "Custom" ? -1 : 0).SelectMany(g => g))
             {
-                updatingUi = false;
+                smallImages.Images.Add(c.Name, MakeThumb(c.Image, 20));
+                items.Add(new GalleryItem { Name = c.Name, Group = c.Pack, Image = MakeThumb(c.Image, Cell), Tag = c });
             }
-        }
+            gallery.SetItems(items);
+        });
 
         static Bitmap MakeThumb(Bitmap src, int cell)
         {
             var bmp = new Bitmap(cell, cell, PixelFormat.Format32bppArgb);
-            using (var g = Graphics.FromImage(bmp))
+            using var g = Graphics.FromImage(bmp);
+            g.Clear(Color.FromArgb(96, 104, 112));
+            int w = src.Width, h = src.Height;
+            if (w > cell || h > cell)
             {
-                g.Clear(Color.FromArgb(96, 104, 112));
-                int w = src.Width, h = src.Height;
-                if (w > cell || h > cell)
-                {
-                    double f = Math.Min((double)cell / w, (double)cell / h);
-                    w = Math.Max(1, (int)Math.Round(w * f));
-                    h = Math.Max(1, (int)Math.Round(h * f));
-                }
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.DrawImage(src, new Rectangle((cell - w) / 2, (cell - h) / 2, w, h));
+                double f = Math.Min((double)cell / w, (double)cell / h);
+                w = Math.Max(1, (int)Math.Round(w * f));
+                h = Math.Max(1, (int)Math.Round(h * f));
             }
+            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+            g.DrawImage(src, new Rectangle((cell - w) / 2, (cell - h) / 2, w, h));
             return bmp;
         }
 
         void PopulateWeapons()
         {
             var selected = new HashSet<string>(SelectedWeapons().Select(w => w.Script), StringComparer.OrdinalIgnoreCase);
-            updatingUi = true;
-            try
+            string filter = filterBox.Text.Trim();
+            bool Matches(WeaponInfo w) => filter.Length == 0 ||
+                w.Names.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                w.Script.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                w.Group.Contains(filter, StringComparison.OrdinalIgnoreCase);
+
+            WithoutEvents(() =>
             {
                 weaponList.BeginUpdate();
                 weaponList.Items.Clear();
-                string filter = filterBox.Text.Trim();
                 foreach (var g in weapons.Select(w => w.Group).Distinct().OrderBy(GroupRank))
                 {
-                    var rows = weapons.Where(w => w.Group == g && (filter.Length == 0 ||
-                        w.Names.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        w.Script.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        w.Group.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+                    var rows = weapons.Where(w => w.Group == g && Matches(w)).ToList();
                     if (rows.Count == 0) continue;
-                    weaponList.Items.Add(new ListViewItem(new[] { g, "", "", "" }) { Tag = null, ImageKey = "none", ToolTipText = "Click to select every weapon under " + g });
+                    weaponList.Items.Add(new ListViewItem([g, "", "", ""]) { Tag = null, ImageKey = "none", ToolTipText = "Click to select every weapon under " + g });
                     foreach (var w in rows)
                     {
-                        var item = new ListViewItem(new[] { w.Names, "", "", "" }) { Tag = w, ToolTipText = w.Names + "\n(" + w.Script + ".txt)", UseItemStyleForSubItems = false, IndentCount = 1 };
+                        var item = new ListViewItem([w.Names, "", "", ""]) { Tag = w, ToolTipText = w.Names + "\n(" + w.Script + ".txt)", UseItemStyleForSubItems = false, IndentCount = 1 };
                         item.Selected = selected.Contains(w.Script);
                         weaponList.Items.Add(item);
                         FillRow(item);
                     }
                 }
-                weaponList.ShowItemToolTips = true;
                 weaponList.EndUpdate();
-            }
-            finally
-            {
-                updatingUi = false;
-            }
+            });
             OnWeaponSelectionChanged();
         }
 
@@ -495,24 +452,23 @@ namespace TF2Crosshairs
         void FitWeaponColumn()
         {
             if (weaponList.Columns.Count < 4) return;
-            int fixedWidth = 0;
-            for (int i = 1; i < weaponList.Columns.Count; i++) fixedWidth += weaponList.Columns[i].Width;
-            int w = weaponList.ClientSize.Width - fixedWidth - 4;
-            weaponList.Columns[0].Width = Math.Max(240, w);
+            int fixedWidth = weaponList.Columns.Cast<ColumnHeader>().Skip(1).Sum(c => c.Width);
+            weaponList.Columns[0].Width = Math.Max(240, weaponList.ClientSize.Width - fixedWidth - 4);
         }
 
         void FillRow(ListViewItem item)
         {
-            if (!(item.Tag is WeaponInfo w)) return; // class heading row
-            Assignment? a = assignments.TryGetValue(w.Script, out var found) && FindCrosshair(found.Crosshair) != null ? found : null;
-            item.ImageKey = a != null ? a.Crosshair : "none";
-            item.SubItems[0].ForeColor = Theme.Current.Fore;
-            item.SubItems[1].Text = a != null ? a.Crosshair : StockText;
-            item.SubItems[1].ForeColor = a != null ? Theme.Current.Fore : Theme.Current.Muted;
-            item.SubItems[2].Text = a != null ? a.Size.ToString() : "";
-            item.SubItems[2].ForeColor = Theme.Current.Fore;
+            if (item.Tag is not WeaponInfo w) return; // class heading row
+            var a = assignments.TryGetValue(w.Script, out var found) && FindCrosshair(found.Crosshair) != null ? found : null;
+            Color fore = Theme.Current.Fore, muted = Theme.Current.Muted;
+            item.ImageKey = a?.Crosshair ?? "none";
+            item.SubItems[0].ForeColor = fore;
+            item.SubItems[1].Text = a?.Crosshair ?? "stock";
+            item.SubItems[1].ForeColor = a != null ? fore : muted;
+            item.SubItems[2].Text = a?.Size.ToString() ?? "";
+            item.SubItems[2].ForeColor = fore;
             item.SubItems[3].Text = !w.Explosive || a == null ? "" : a.Explosion.Length == 0 ? "Default" : ExplosionEffects.Label(a.Explosion).Replace(" (no smoke)", "");
-            item.SubItems[3].ForeColor = a != null && a.Explosion.Length > 0 ? Theme.Current.Fore : Theme.Current.Muted;
+            item.SubItems[3].ForeColor = a != null && a.Explosion.Length > 0 ? fore : muted;
         }
 
         void RefreshRows()
@@ -522,27 +478,30 @@ namespace TF2Crosshairs
 
         // ------------------------------------------------------------------ selection handling
 
-        List<WeaponInfo> SelectedWeapons() => weaponList.SelectedItems.Cast<ListViewItem>().Select(i => i.Tag as WeaponInfo).Where(w => w != null).Select(w => w!).ToList();
+        List<WeaponInfo> SelectedWeapons() => weaponList.SelectedItems.Cast<ListViewItem>().Select(i => i.Tag).OfType<WeaponInfo>().ToList();
 
         CrosshairInfo? SelectedCrosshair() => gallery.SelectedItem?.Tag as CrosshairInfo;
 
         string SelectedExplosionKey => explosionBox.SelectedIndex >= 0 && explosionBox.SelectedIndex < ExplosionEffects.Options.Length
             ? ExplosionEffects.Options[explosionBox.SelectedIndex].Key : "";
 
-        void SetExplosionKey(string key)
-        {
-            for (int i = 0; i < ExplosionEffects.Options.Length; i++)
-                if (ExplosionEffects.Options[i].Key == key) { explosionBox.SelectedIndex = i; return; }
-            explosionBox.SelectedIndex = 0;
-        }
+        void SetExplosionKey(string key) =>
+            explosionBox.SelectedIndex = Math.Max(0, Array.FindIndex(ExplosionEffects.Options, o => o.Key == key));
 
-        void SelectGalleryItem(string? name) => gallery.Select(name);
+        void SetSize(int px) => sizeBox.Value = Math.Clamp(px, sizeBox.Minimum, sizeBox.Maximum);
+
+        /// <summary>Runs a UI update without the change handlers reacting to it.</summary>
+        void WithoutEvents(Action update)
+        {
+            updatingUi = true;
+            try { update(); }
+            finally { updatingUi = false; }
+        }
 
         void OnWeaponSelectionChanged()
         {
             if (updatingUi) return;
-            updatingUi = true;
-            try
+            WithoutEvents(() =>
             {
                 // a class heading reached with the keyboard (arrows, Ctrl+A) stands for the weapons under it
                 foreach (var h in weaponList.SelectedItems.Cast<ListViewItem>().Where(i => i.Tag == null).ToList())
@@ -553,24 +512,19 @@ namespace TF2Crosshairs
                 var sel = SelectedWeapons();
                 explosionBox.Enabled = sel.Any(w => w.Explosive);
                 var first = sel.FirstOrDefault();
-                Assignment? a = null;
-                if (first != null) assignments.TryGetValue(first.Script, out a);
-                if (a != null && FindCrosshair(a.Crosshair) != null)
+                if (first == null) return;
+                if (assignments.TryGetValue(first.Script, out var a) && FindCrosshair(a.Crosshair) != null)
                 {
-                    SelectGalleryItem(a.Crosshair);
-                    sizeBox.Value = Math.Min(sizeBox.Maximum, Math.Max(sizeBox.Minimum, a.Size));
-                    SetExplosionKey(first!.Explosive ? a.Explosion : "");
+                    gallery.Select(a.Crosshair);
+                    SetSize(a.Size);
+                    SetExplosionKey(first.Explosive ? a.Explosion : "");
                 }
-                else if (first != null)
+                else
                 {
-                    SelectGalleryItem(null);
+                    gallery.Select(null);
                     SetExplosionKey("");
                 }
-            }
-            finally
-            {
-                updatingUi = false;
-            }
+            });
             UpdatePreview();
         }
 
@@ -584,42 +538,33 @@ namespace TF2Crosshairs
         /// <summary>Clicking a class heading selects the whole class; Ctrl/Shift-click adds it to the current selection.</summary>
         void SelectClass(ListViewItem heading, bool add)
         {
-            updatingUi = true;
-            try
+            WithoutEvents(() =>
             {
                 weaponList.BeginUpdate();
                 if (!add)
-                    foreach (ListViewItem it in weaponList.SelectedItems.Cast<ListViewItem>().ToList()) it.Selected = false;
+                    foreach (var it in weaponList.SelectedItems.Cast<ListViewItem>().ToList()) it.Selected = false;
                 foreach (var it in ClassRows(heading)) it.Selected = true;
                 weaponList.EndUpdate();
-            }
-            finally
-            {
-                updatingUi = false;
-            }
+            });
             OnWeaponSelectionChanged();
         }
 
         void OnGallerySelectionChanged()
         {
             if (updatingUi) return;
-            var c = SelectedCrosshair();
-            if (c != null)
+            if (SelectedCrosshair() is { } c)
             {
-                updatingUi = true;
-                try
+                WithoutEvents(() =>
                 {
                     var first = SelectedWeapons().FirstOrDefault();
-                    if (first != null && assignments.TryGetValue(first.Script, out var a) && a.Crosshair.Equals(c.Name, StringComparison.OrdinalIgnoreCase))
-                        sizeBox.Value = Math.Min(sizeBox.Maximum, Math.Max(sizeBox.Minimum, a.Size));
-                    else
-                        sizeBox.Value = Math.Min(sizeBox.Maximum, Math.Max(sizeBox.Minimum, c.Image.Width));
-                }
-                finally
+                    SetSize(first != null && assignments.TryGetValue(first.Script, out var a) && a.Crosshair.Equals(c.Name, StringComparison.OrdinalIgnoreCase)
+                        ? a.Size : c.Image.Width);
+                });
+                if (weaponList.SelectedItems.Count > 0)
                 {
-                    updatingUi = false;
+                    foreach (var w in SelectedWeapons()) Assign(w, c);
+                    AssignmentsChanged();
                 }
-                if (weaponList.SelectedItems.Count > 0) AssignToSelected(c.Name);
             }
             UpdatePreview();
         }
@@ -627,19 +572,22 @@ namespace TF2Crosshairs
         void OnSizeChanged()
         {
             if (updatingUi) return;
-            bool changed = false;
-            foreach (var w in SelectedWeapons())
-                if (assignments.TryGetValue(w.Script, out var a)) { a.Size = (int)sizeBox.Value; changed = true; }
-            if (changed) { RefreshRows(); SaveProfile(); }
+            EditSelectedAssignments(w => true, a => a.Size = (int)sizeBox.Value);
             UpdatePreview();
         }
 
         void OnExplosionChanged()
         {
             if (updatingUi) return;
+            EditSelectedAssignments(w => w.Explosive, a => a.Explosion = SelectedExplosionKey);
+        }
+
+        /// <summary>Applies a settings change to the selected weapons that already have a crosshair.</summary>
+        void EditSelectedAssignments(Func<WeaponInfo, bool> applies, Action<Assignment> edit)
+        {
             bool changed = false;
             foreach (var w in SelectedWeapons())
-                if (w.Explosive && assignments.TryGetValue(w.Script, out var a)) { a.Explosion = SelectedExplosionKey; changed = true; }
+                if (applies(w) && assignments.TryGetValue(w.Script, out var a)) { edit(a); changed = true; }
             if (changed) { RefreshRows(); SaveProfile(); }
         }
 
@@ -651,29 +599,24 @@ namespace TF2Crosshairs
             preview.Invalidate();
 
             var sel = SelectedWeapons();
-            string text;
-            if (sel.Count == 0)
-                text = c != null ? c.Name + "  (" + c.Image.Width + "x" + c.Image.Height + ")\nSelect weapons on the left to assign it." : "Select a weapon on the left.";
-            else if (c == null)
-                text = (sel.Count == 1 ? Short(sel[0].Names) : sel.Count + " weapons") + ": stock crosshair\nClick a crosshair to assign it.";
-            else
-                text = (sel.Count == 1 ? Short(sel[0].Names) : sel.Count + " weapons") + " \u2192 " + c.Name;
-            selectedLabel.Text = text;
+            string who = sel.Count == 1 ? Short(sel[0].Names) : sel.Count + " weapons";
+            selectedLabel.Text =
+                sel.Count == 0 ? (c != null ? c.Name + "  (" + c.Image.Width + "x" + c.Image.Height + ")\nSelect weapons on the left to assign it." : "Select a weapon on the left.")
+                : c == null ? who + ": stock crosshair\nClick a crosshair to assign it."
+                : who + " \u2192 " + c.Name;
         }
 
         static string Short(string names)
         {
             int i = names.IndexOf(',');
-            return i > 0 ? names.Substring(0, i) : names;
+            return i > 0 ? names[..i] : names;
         }
 
         // ------------------------------------------------------------------ assignment actions
 
-        void AssignToSelected(string crosshairName)
+        /// <summary>After assignments were added, changed or removed: redraw the rows, update the count and autosave.</summary>
+        void AssignmentsChanged()
         {
-            var c = FindCrosshair(crosshairName);
-            if (c == null) return;
-            foreach (var w in SelectedWeapons()) Assign(w, c);
             RefreshRows();
             UpdateStatusCount();
             SaveProfile();
@@ -696,13 +639,11 @@ namespace TF2Crosshairs
             var c = SelectedCrosshair();
             if (c == null)
             {
-                MessageBox.Show(this, "Click a crosshair first, then use this button to give it to every weapon.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Notify("Click a crosshair first, then use this button to give it to every weapon.", MessageBoxIcon.Information);
                 return;
             }
             foreach (var w in weapons) Assign(w, c);
-            RefreshRows();
-            UpdateStatusCount();
-            SaveProfile();
+            AssignmentsChanged();
             SetStatus("Assigned " + c.Name + " to all " + weapons.Count + " weapons.");
         }
 
@@ -711,13 +652,7 @@ namespace TF2Crosshairs
             var sel = SelectedWeapons();
             if (sel.Count == 0) return;
             foreach (var w in sel) assignments.Remove(w.Script);
-            updatingUi = true;
-            try { SelectGalleryItem(null); SetExplosionKey(""); }
-            finally { updatingUi = false; }
-            RefreshRows();
-            UpdatePreview();
-            UpdateStatusCount();
-            SaveProfile();
+            AfterReset();
         }
 
         void ClearAll()
@@ -725,54 +660,52 @@ namespace TF2Crosshairs
             if (assignments.Count == 0) return;
             if (MessageBox.Show(this, "Reset every weapon to its stock crosshair?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             assignments.Clear();
-            updatingUi = true;
-            try { SelectGalleryItem(null); SetExplosionKey(""); }
-            finally { updatingUi = false; }
-            RefreshRows();
+            AfterReset();
+        }
+
+        /// <summary>After weapons went back to stock: clear the crosshair and explosion pickers, then refresh and autosave.</summary>
+        void AfterReset()
+        {
+            WithoutEvents(() => { gallery.Select(null); SetExplosionKey(""); });
             UpdatePreview();
-            UpdateStatusCount();
-            SaveProfile();
+            AssignmentsChanged();
         }
 
         void AddCustomCrosshairs()
         {
-            using (var dlg = new OpenFileDialog { Title = "Add crosshair textures", Filter = "Valve texture (*.vtf)|*.vtf", Multiselect = true })
+            using var dlg = new OpenFileDialog { Title = "Add crosshair textures", Filter = "Valve texture (*.vtf)|*.vtf", Multiselect = true };
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            var errors = new List<string>();
+            string? last = null;
+            foreach (var path in dlg.FileNames)
             {
-                if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                var errors = new List<string>();
-                string? last = null;
-                foreach (var path in dlg.FileNames)
-                {
-                    try
-                    {
-                        var bytes = File.ReadAllBytes(path);
-                        var image = Vtf.Decode(bytes);
-                        string name = Regex.Replace(Path.GetFileNameWithoutExtension(path), "[^A-Za-z0-9_\\-]", "_");
-                        if (name.Length == 0) name = "custom";
-                        var clash = FindCrosshair(name);
-                        if (clash != null && clash.SourcePath == null) name += "_custom";
-                        AddCrosshair(name, bytes, image, path);
-                        profile.CustomCrosshairs.RemoveAll(kv => kv.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
-                        profile.CustomCrosshairs.Add(new KeyValuePair<string, string>(name, path));
-                        last = name;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add(Path.GetFileName(path) + ": " + ex.Message);
-                    }
-                }
-                PopulateGallery();
-                RefreshRows();
-                SaveProfile();
-                if (last != null)
-                {
-                    updatingUi = true;
-                    try { SelectGalleryItem(last); } finally { updatingUi = false; }
-                    UpdatePreview();
-                }
-                if (errors.Count > 0)
-                    MessageBox.Show(this, "Some files could not be added:\n\n" + string.Join("\n", errors), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                try { last = ImportCrosshair(path); }
+                catch (Exception ex) { errors.Add(Path.GetFileName(path) + ": " + ex.Message); }
             }
+            PopulateGallery();
+            RefreshRows();
+            SaveProfile();
+            if (last != null)
+            {
+                WithoutEvents(() => gallery.Select(last));
+                UpdatePreview();
+            }
+            if (errors.Count > 0)
+                Notify("Some files could not be added:\n\n" + string.Join("\n", errors), MessageBoxIcon.Warning);
+        }
+
+        /// <summary>Loads one .vtf as a custom crosshair and remembers it in the profile; returns the name it got.</summary>
+        string ImportCrosshair(string path)
+        {
+            var bytes = File.ReadAllBytes(path);
+            var image = Vtf.Decode(bytes);
+            string name = Regex.Replace(Path.GetFileNameWithoutExtension(path), "[^A-Za-z0-9_\\-]", "_");
+            if (name.Length == 0) name = "custom";
+            if (FindCrosshair(name) is { SourcePath: null }) name += "_custom";
+            AddCustomCrosshair(name, bytes, image, path);
+            profile.CustomCrosshairs.RemoveAll(kv => kv.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+            profile.CustomCrosshairs.Add(new(name, path));
+            return name;
         }
 
         // ------------------------------------------------------------------ output
@@ -782,7 +715,7 @@ namespace TF2Crosshairs
             var list = assignments.Values.Where(a => FindCrosshair(a.Crosshair) != null).ToList();
             if (list.Count == 0)
             {
-                MessageBox.Show(this, "Assign a crosshair to at least one weapon first.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Notify("Assign a crosshair to at least one weapon first.", MessageBoxIcon.Information);
                 return null;
             }
             try
@@ -791,31 +724,25 @@ namespace TF2Crosshairs
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Could not build the package:\n" + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Notify("Could not build the package:\n" + ex.Message, MessageBoxIcon.Error);
                 return null;
             }
         }
 
         void Install()
         {
-            if (tfFolder == null)
-            {
-                MessageBox.Show(this, "Pick your Team Fortress 2\\tf\\custom folder first.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                BrowseTfFolder();
-                if (tfFolder == null) return;
-            }
+            if (tfFolder == null) Notify("Pick your Team Fortress 2\\tf\\custom folder first.", MessageBoxIcon.Information);
+            if (!EnsureTfFolder()) return;
             var files = BuildFiles();
             if (files == null) return;
             string custom = Tf2Locator.CustomFolder(tfFolder);
-            string target = Path.Combine(custom, Packager.FolderName);
-            if (Packager.InstallFolderExists(custom) && !Packager.OwnsInstallFolder(custom))
-            {
-                var r = MessageBox.Show(this,
+            string target = Packager.InstallFolder(custom);
+            if (Directory.Exists(target) && !Packager.OwnsInstallFolder(custom) &&
+                MessageBox.Show(this,
                     target + "\n\nalready exists and was not written by this app (probably a cfg.tf package). " +
                     "Replace its weapon scripts and crosshair textures with your current setup?",
-                    "Replace existing folder?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (r != DialogResult.Yes) return;
-            }
+                    "Replace existing folder?", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
             try
             {
                 Directory.CreateDirectory(custom);
@@ -823,13 +750,11 @@ namespace TF2Crosshairs
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Could not write into the TF2 folder:\n" + ex.Message +
-                    "\n\nTry running this app as administrator, or use \"Save ZIP\" and extract it into tf\\custom yourself.",
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Notify("Could not write into the TF2 folder:\n" + ex.Message +
+                    "\n\nTry running this app as administrator, or use \"Save ZIP\" and extract it into tf\\custom yourself.", MessageBoxIcon.Error);
                 return;
             }
-            int count = assignments.Count;
-            SetStatus("Installed crosshairs for " + count + " weapon" + (count == 1 ? "" : "s") + " into " + target + ". Restart TF2 if it is running.");
+            SetStatus("Installed crosshairs for " + WeaponCount(assignments.Count) + " into " + target + ". Restart TF2 if it is running.");
             CheckCrosshairCvar();
         }
 
@@ -837,24 +762,22 @@ namespace TF2Crosshairs
         {
             var files = BuildFiles();
             if (files == null) return;
-            using (var dlg = new SaveFileDialog { Title = "Save crosshair package", Filter = "ZIP archive (*.zip)|*.zip", FileName = "crosshairs.zip" })
+            using var dlg = new SaveFileDialog { Title = "Save crosshair package", Filter = "ZIP archive (*.zip)|*.zip", FileName = "crosshairs.zip" };
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            try
             {
-                if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                try
-                {
-                    Packager.WriteZip(files, dlg.FileName);
-                    SetStatus("Saved " + dlg.FileName + ". Extract it into Team Fortress 2\\tf\\custom so you get tf\\custom\\crosshairs.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, "Could not save the ZIP:\n" + ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                Packager.WriteZip(files, dlg.FileName);
+                SetStatus("Saved " + dlg.FileName + ". Extract it into Team Fortress 2\\tf\\custom so you get tf\\custom\\crosshairs.");
+            }
+            catch (Exception ex)
+            {
+                Notify("Could not save the ZIP:\n" + ex.Message, MessageBoxIcon.Error);
             }
         }
 
         void OpenCustomFolder()
         {
-            if (tfFolder == null) { BrowseTfFolder(); if (tfFolder == null) return; }
+            if (!EnsureTfFolder()) return;
             string custom = Tf2Locator.CustomFolder(tfFolder);
             try
             {
@@ -863,30 +786,36 @@ namespace TF2Crosshairs
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Notify(ex.Message, MessageBoxIcon.Error);
             }
         }
 
         // ------------------------------------------------------------------ TF2 folder
 
+        /// <summary>Asks for the TF2 folder when none is known yet; false when the user still has not picked one.</summary>
+        [MemberNotNullWhen(true, nameof(tfFolder))]
+        bool EnsureTfFolder()
+        {
+            if (tfFolder == null) BrowseTfFolder();
+            return tfFolder != null;
+        }
+
         void BrowseTfFolder()
         {
-            using (var dlg = new FolderBrowserDialog { Description = "Select your Team Fortress 2\\tf\\custom folder (the tf or Team Fortress 2 folder above it works too)", ShowNewFolderButton = false })
+            using var dlg = new FolderBrowserDialog { Description = "Select your Team Fortress 2\\tf\\custom folder (the tf or Team Fortress 2 folder above it works too)", ShowNewFolderButton = false };
+            if (tfFolder != null) dlg.SelectedPath = Tf2Locator.CustomFolder(tfFolder);
+            if (dlg.ShowDialog(this) != DialogResult.OK) return;
+            var tf = Tf2Locator.NormalizeTfFolder(dlg.SelectedPath);
+            if (tf == null)
             {
-                if (tfFolder != null) dlg.SelectedPath = Tf2Locator.CustomFolder(tfFolder);
-                if (dlg.ShowDialog(this) != DialogResult.OK) return;
-                var tf = Tf2Locator.NormalizeTfFolder(dlg.SelectedPath);
-                if (tf == null)
-                {
-                    MessageBox.Show(this, "That does not look like a TF2 folder. Pick the tf\\custom folder of your TF2 install, for example:\n" +
-                        "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\custom", Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                tfFolder = tf;
-                profile.TfFolder = tf;
-                UpdateTfFolderUi();
-                SaveProfile();
+                Notify("That does not look like a TF2 folder. Pick the tf\\custom folder of your TF2 install, for example:\n" +
+                    "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Team Fortress 2\\tf\\custom", MessageBoxIcon.Warning);
+                return;
             }
+            tfFolder = tf;
+            profile.TfFolder = tf;
+            UpdateTfFolderUi();
+            SaveProfile();
         }
 
         void UpdateTfFolderUi()
@@ -909,7 +838,7 @@ namespace TF2Crosshairs
 
         // ------------------------------------------------------------------ misc
 
-        Profile SafeLoadProfile()
+        static Profile SafeLoadProfile()
         {
             try { return Profile.Load(Profile.DefaultPath); }
             catch { return new Profile(); }
@@ -930,13 +859,14 @@ namespace TF2Crosshairs
             }
         }
 
-        void UpdateStatusCount()
-        {
-            int n = assignments.Count;
-            SetStatus(n == 0 ? "No weapons assigned yet." : n + " weapon" + (n == 1 ? "" : "s") + " assigned.");
-        }
+        void UpdateStatusCount() =>
+            SetStatus(assignments.Count == 0 ? "No weapons assigned yet." : WeaponCount(assignments.Count) + " assigned.");
+
+        static string WeaponCount(int n) => n + " weapon" + (n == 1 ? "" : "s");
 
         void SetStatus(string text) => statusLabel.Text = text;
+
+        void Notify(string text, MessageBoxIcon icon) => MessageBox.Show(this, text, Text, MessageBoxButtons.OK, icon);
 
         void ShowHelp()
         {
@@ -951,35 +881,6 @@ namespace TF2Crosshairs
                 "Custom .vtf crosshairs can be added with the button on the right; they are copied into the package.\n\n" +
                 "This mirrors the cfg.tf weapon-specific crosshair tool, with the weapons it was missing added.",
                 "How it works", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-    }
-
-    /// <summary>
-    /// ListView whose class heading rows (items with a null Tag) act as "select the whole class" buttons.
-    /// The click is handled before the native control sees it, otherwise the control's own click
-    /// processing would undo the selection.
-    /// </summary>
-    class WeaponListView : ListView
-    {
-        const int WM_LBUTTONDOWN = 0x0201, WM_LBUTTONDBLCLK = 0x0203;
-
-        public event Action<ListViewItem, bool>? HeadingClicked;
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == WM_LBUTTONDOWN || m.Msg == WM_LBUTTONDBLCLK)
-            {
-                long lp = (long)m.LParam;
-                var hit = GetItemAt((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF));
-                if (hit != null && hit.Tag == null)
-                {
-                    Focus();
-                    HeadingClicked?.Invoke(hit, (ModifierKeys & (Keys.Control | Keys.Shift)) != 0);
-                    return;
-                }
-            }
-            base.WndProc(ref m);
         }
     }
 }

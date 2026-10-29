@@ -16,22 +16,23 @@ namespace TF2Crosshairs
 
         public static byte[] Bytes(string logicalName)
         {
-            using (var s = Asm.GetManifestResourceStream(logicalName))
-            {
-                if (s == null) throw new FileNotFoundException("Missing embedded resource: " + logicalName);
-                using (var ms = new MemoryStream())
-                {
-                    s.CopyTo(ms);
-                    return ms.ToArray();
-                }
-            }
+            using var s = Asm.GetManifestResourceStream(logicalName) ?? throw new FileNotFoundException("Missing embedded resource: " + logicalName);
+            using var ms = new MemoryStream();
+            s.CopyTo(ms);
+            return ms.ToArray();
         }
 
         public static string Text(string logicalName) => new UTF8Encoding(false).GetString(Bytes(logicalName));
 
+        /// <summary>The tab-separated fields of each line, skipping blank lines and # comments.</summary>
+        public static IEnumerable<string[]> TsvRows(string text) =>
+            text.Split('\n').Select(line => line.TrimEnd('\r'))
+                .Where(line => line.Length > 0 && !line.StartsWith('#'))
+                .Select(line => line.Split('\t'));
+
         public static IEnumerable<string> CrosshairNames() =>
             Names.Where(n => n.StartsWith("crosshairs/", StringComparison.Ordinal) && n.EndsWith(".vtf", StringComparison.OrdinalIgnoreCase))
-                 .Select(n => n.Substring("crosshairs/".Length, n.Length - "crosshairs/".Length - ".vtf".Length))
+                 .Select(n => n["crosshairs/".Length..^".vtf".Length])
                  .OrderBy(n => n, StringComparer.OrdinalIgnoreCase);
 
         public static byte[] Crosshair(string name) => Bytes("crosshairs/" + name + ".vtf");

@@ -10,12 +10,14 @@ namespace TF2Crosshairs
     {
         public string? TfFolder;
         public bool Dark = true;
-        public readonly List<Assignment> Assignments = new List<Assignment>();
+        public readonly List<Assignment> Assignments = [];
         /// <summary>Custom crosshairs the user imported: name -> original .vtf path.</summary>
-        public readonly List<KeyValuePair<string, string>> CustomCrosshairs = new List<KeyValuePair<string, string>>();
+        public readonly List<KeyValuePair<string, string>> CustomCrosshairs = [];
 
-        public static string DefaultPath =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TF2Crosshairs", "profile.txt");
+        /// <summary>%APPDATA%\TF2Crosshairs, which also gets the crash log.</summary>
+        public static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TF2Crosshairs");
+
+        public static string DefaultPath => Path.Combine(Folder, "profile.txt");
 
         public static Profile Load(string path)
         {
@@ -24,7 +26,6 @@ namespace TF2Crosshairs
             foreach (var raw in File.ReadAllLines(path))
             {
                 var parts = raw.Split('\t');
-                if (parts.Length == 0) continue;
                 switch (parts[0])
                 {
                     case "tf":
@@ -34,7 +35,7 @@ namespace TF2Crosshairs
                         if (parts.Length > 1) p.Dark = parts[1] != "0";
                         break;
                     case "custom":
-                        if (parts.Length > 2) p.CustomCrosshairs.Add(new KeyValuePair<string, string>(parts[1], parts[2]));
+                        if (parts.Length > 2) p.CustomCrosshairs.Add(new(parts[1], parts[2]));
                         break;
                     case "weapon":
                         if (parts.Length > 2)
@@ -56,9 +57,7 @@ namespace TF2Crosshairs
             if (!string.IsNullOrEmpty(TfFolder)) sb.Append("tf\t").Append(TfFolder).Append("\r\n");
             sb.Append("dark\t").Append(Dark ? "1" : "0").Append("\r\n");
             foreach (var c in CustomCrosshairs) sb.Append("custom\t").Append(c.Key).Append('\t').Append(c.Value).Append("\r\n");
-            foreach (var a in Assignments)
-                sb.Append("weapon\t").Append(a.Script).Append('\t').Append(a.Crosshair).Append('\t')
-                  .Append(a.Size.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append('\t').Append(a.Explosion).Append("\r\n");
+            foreach (var a in Assignments) sb.Append("weapon\t").Append(a.ToTsv()).Append("\r\n");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllText(path, sb.ToString(), new UTF8Encoding(false));
         }

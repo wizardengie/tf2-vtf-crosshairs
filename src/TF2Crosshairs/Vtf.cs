@@ -82,20 +82,20 @@ namespace TF2Crosshairs
             return bmp;
         }
 
-        static int ImageSize(int format, int w, int h)
+        static int ImageSize(int format, int w, int h) => format switch
         {
-            switch (format)
-            {
-                case 13: case 20: return Math.Max(1, (w + 3) / 4) * Math.Max(1, (h + 3) / 4) * 8;   // DXT1, DXT1 one-bit alpha
-                case 14: case 15: return Math.Max(1, (w + 3) / 4) * Math.Max(1, (h + 3) / 4) * 16;  // DXT3, DXT5
-                case 0: case 1: case 11: case 12: case 16: case 23: case 26: return w * h * 4;
-                case 2: case 3: case 9: case 10: return w * h * 3;
-                case 4: case 6: case 17: case 18: case 19: case 21: case 22: return w * h * 2;
-                case 5: case 7: case 8: return w * h;
-                case 24: case 25: return w * h * 8;
-                default: throw new NotSupportedException("Unsupported VTF image format " + format + ".");
-            }
-        }
+            13 or 20 => Blocks(w) * Blocks(h) * 8,   // DXT1, DXT1 one-bit alpha
+            14 or 15 => Blocks(w) * Blocks(h) * 16,  // DXT3, DXT5
+            0 or 1 or 11 or 12 or 16 or 23 or 26 => w * h * 4,
+            2 or 3 or 9 or 10 => w * h * 3,
+            4 or 6 or 17 or 18 or 19 or 21 or 22 => w * h * 2,
+            5 or 7 or 8 => w * h,
+            24 or 25 => w * h * 8,
+            _ => throw new NotSupportedException("Unsupported VTF image format " + format + "."),
+        };
+
+        /// <summary>Number of 4x4 DXT blocks along an edge of <paramref name="pixels"/> pixels.</summary>
+        static int Blocks(int pixels) => Math.Max(1, (pixels + 3) / 4);
 
         static byte[] ToBgra(byte[] d, int o, int format, int w, int h)
         {
@@ -143,7 +143,7 @@ namespace TF2Crosshairs
 
         static void DecodeDxt1(byte[] d, int o, int w, int h, byte[] p)
         {
-            int bw = Math.Max(1, (w + 3) / 4), bh = Math.Max(1, (h + 3) / 4);
+            int bw = Blocks(w), bh = Blocks(h);
             var c = new byte[16];
             for (int by = 0; by < bh; by++)
                 for (int bx = 0; bx < bw; bx++, o += 8)
@@ -155,7 +155,7 @@ namespace TF2Crosshairs
 
         static void DecodeDxt3(byte[] d, int o, int w, int h, byte[] p)
         {
-            int bw = Math.Max(1, (w + 3) / 4), bh = Math.Max(1, (h + 3) / 4);
+            int bw = Blocks(w), bh = Blocks(h);
             var c = new byte[16];
             var alpha = new byte[16];
             for (int by = 0; by < bh; by++)
@@ -169,7 +169,7 @@ namespace TF2Crosshairs
 
         static void DecodeDxt5(byte[] d, int o, int w, int h, byte[] p)
         {
-            int bw = Math.Max(1, (w + 3) / 4), bh = Math.Max(1, (h + 3) / 4);
+            int bw = Blocks(w), bh = Blocks(h);
             var c = new byte[16];
             var pal = new byte[8];
             var alpha = new byte[16];
