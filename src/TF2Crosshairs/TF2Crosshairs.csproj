@@ -16,7 +16,7 @@
     <ApplicationVisualStyles>true</ApplicationVisualStyles>
     <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
     <ApplicationDefaultFont>Segoe UI, 9pt</ApplicationDefaultFont>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Product>TF2 Weapon Crosshairs</Product>
     <Description>Assign a VTF crosshair to each Team Fortress 2 weapon.</Description>
     <Deterministic>true</Deterministic>
