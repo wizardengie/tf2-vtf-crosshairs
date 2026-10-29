@@ -76,7 +76,7 @@ namespace TF2Crosshairs
         string? tfFolder;
         bool updatingUi;
 
-        readonly ListView weaponList = new ListView();
+        readonly WeaponListView weaponList = new WeaponListView();
         readonly TextBox filterBox = new TextBox();
         readonly Gallery gallery = new Gallery();
         readonly ImageList smallImages = new ImageList { ImageSize = new Size(20, 20), ColorDepth = ColorDepth.Depth32Bit };
@@ -138,7 +138,7 @@ namespace TF2Crosshairs
             {
                 AutoSize = true,
                 Dock = DockStyle.Fill,
-                Text = "Pick one or more weapons on the left, then click a crosshair on the right to assign it. " +
+                Text = "Pick one or more weapons on the left (click a class name to take the whole class), then click a crosshair on the right to assign it. " +
                        "Weapons you leave alone keep their stock crosshair. When you are done, click \"Install into TF2\" " +
                        "(or save a ZIP to share). In TF2 the crosshair must be set to None / cl_crosshair_file \"\" for these to show."
             };
@@ -176,9 +176,12 @@ namespace TF2Crosshairs
             var zipBtn = new Button { Text = "Save ZIP...", AutoSize = true, Padding = new Padding(6, 2, 6, 2) };
             zipBtn.Click += (s, e) => SaveZip();
             openFolderBtn.Click += (s, e) => OpenCustomFolder();
+            var resetAllBtn = new Button { Text = "Reset ALL weapons", AutoSize = true, Padding = new Padding(6, 2, 6, 2), Margin = new Padding(14, 3, 3, 3) };
+            resetAllBtn.Click += (s, e) => ClearAll();
             bottom.Controls.Add(installBtn);
             bottom.Controls.Add(zipBtn);
             bottom.Controls.Add(openFolderBtn);
+            bottom.Controls.Add(resetAllBtn);
             bottom.Controls.Add(statusLabel);
 
             // --- left: weapon list
@@ -202,6 +205,7 @@ namespace TF2Crosshairs
             weaponList.Columns.Add("Size", 40, HorizontalAlignment.Right);
             weaponList.Columns.Add("Explosion", 100);
             weaponList.SelectedIndexChanged += (s, e) => OnWeaponSelectionChanged();
+            weaponList.HeadingClicked += SelectClass;
             weaponList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) { ClearSelected(); e.Handled = true; } };
             weaponList.Resize += (s, e) => FitWeaponColumn();
             // the column header is system-drawn in light grey, so paint it ourselves when the theme is dark
@@ -251,11 +255,9 @@ namespace TF2Crosshairs
             applyAll.Click += (s, e) => ApplyToAll();
             var clearSel = new Button { Text = "Reset selected weapons to stock", AutoSize = true };
             clearSel.Click += (s, e) => ClearSelected();
-            var clearAll = new Button { Text = "Reset ALL weapons to stock", AutoSize = true };
-            clearAll.Click += (s, e) => ClearAll();
             var addCustom = new Button { Text = "Add custom crosshair (.vtf)...", AutoSize = true };
             addCustom.Click += (s, e) => AddCustomCrosshairs();
-            foreach (var b in new[] { applyAll, clearSel, clearAll, addCustom }) { b.Width = 230; b.Margin = new Padding(0, 2, 0, 2); buttons.Controls.Add(b); }
+            foreach (var b in new[] { applyAll, clearSel, addCustom }) { b.Width = 230; b.Margin = new Padding(0, 2, 0, 2); buttons.Controls.Add(b); }
             side.Controls.Add(buttons, 0, row);
             side.SetColumnSpan(buttons, 2);
             settings.Controls.Add(side, 1, 0);
@@ -464,7 +466,7 @@ namespace TF2Crosshairs
                         w.Script.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
                         w.Group.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
                     if (rows.Count == 0) continue;
-                    weaponList.Items.Add(new ListViewItem(new[] { g, "", "", "" }) { Tag = null, ImageKey = "none" });
+                    weaponList.Items.Add(new ListViewItem(new[] { g, "", "", "" }) { Tag = null, ImageKey = "none", ToolTipText = "Click to select every weapon under " + g });
                     foreach (var w in rows)
                     {
                         var item = new ListViewItem(new[] { w.Names, "", "", "" }) { Tag = w, ToolTipText = w.Names + "\n(" + w.Script + ".txt)", UseItemStyleForSubItems = false, IndentCount = 1 };
@@ -542,9 +544,12 @@ namespace TF2Crosshairs
             updatingUi = true;
             try
             {
-                // class heading rows are not selectable
-                foreach (ListViewItem it in weaponList.SelectedItems.Cast<ListViewItem>().Where(i => i.Tag == null).ToList())
-                    it.Selected = false;
+                // a class heading reached with the keyboard (arrows, Ctrl+A) stands for the weapons under it
+                foreach (var h in weaponList.SelectedItems.Cast<ListViewItem>().Where(i => i.Tag == null).ToList())
+                {
+                    h.Selected = false;
+                    foreach (var it in ClassRows(h)) it.Selected = true;
+                }
                 var sel = SelectedWeapons();
                 explosionBox.Enabled = sel.Any(w => w.Explosive);
                 var first = sel.FirstOrDefault();
@@ -567,6 +572,32 @@ namespace TF2Crosshairs
                 updatingUi = false;
             }
             UpdatePreview();
+        }
+
+        /// <summary>The weapon rows listed under a class heading.</summary>
+        IEnumerable<ListViewItem> ClassRows(ListViewItem heading)
+        {
+            for (int i = heading.Index + 1; i < weaponList.Items.Count && weaponList.Items[i].Tag != null; i++)
+                yield return weaponList.Items[i];
+        }
+
+        /// <summary>Clicking a class heading selects the whole class; Ctrl/Shift-click adds it to the current selection.</summary>
+        void SelectClass(ListViewItem heading, bool add)
+        {
+            updatingUi = true;
+            try
+            {
+                weaponList.BeginUpdate();
+                if (!add)
+                    foreach (ListViewItem it in weaponList.SelectedItems.Cast<ListViewItem>().ToList()) it.Selected = false;
+                foreach (var it in ClassRows(heading)) it.Selected = true;
+                weaponList.EndUpdate();
+            }
+            finally
+            {
+                updatingUi = false;
+            }
+            OnWeaponSelectionChanged();
         }
 
         void OnGallerySelectionChanged()
@@ -910,7 +941,7 @@ namespace TF2Crosshairs
         void ShowHelp()
         {
             MessageBox.Show(this,
-                "1. Select one or more weapons in the list (Ctrl/Shift-click for several).\n" +
+                "1. Select one or more weapons in the list (Ctrl/Shift-click for several, or click a class name to select the whole class).\n" +
                 "2. Click a crosshair on the right. It is assigned immediately; the preview shows it over a game screenshot.\n" +
                 "3. Size changes how big the crosshair is drawn in game. Explosive weapons can also swap the explosion effect for a smoke-free one.\n" +
                 "4. Click \"Install into TF2\" to write tf\\custom\\crosshairs, or \"Save ZIP\" to share the package.\n" +
@@ -922,5 +953,33 @@ namespace TF2Crosshairs
                 "How it works", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+    }
+
+    /// <summary>
+    /// ListView whose class heading rows (items with a null Tag) act as "select the whole class" buttons.
+    /// The click is handled before the native control sees it, otherwise the control's own click
+    /// processing would undo the selection.
+    /// </summary>
+    class WeaponListView : ListView
+    {
+        const int WM_LBUTTONDOWN = 0x0201, WM_LBUTTONDBLCLK = 0x0203;
+
+        public event Action<ListViewItem, bool>? HeadingClicked;
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_LBUTTONDOWN || m.Msg == WM_LBUTTONDBLCLK)
+            {
+                long lp = (long)m.LParam;
+                var hit = GetItemAt((short)(lp & 0xFFFF), (short)((lp >> 16) & 0xFFFF));
+                if (hit != null && hit.Tag == null)
+                {
+                    Focus();
+                    HeadingClicked?.Invoke(hit, (ModifierKeys & (Keys.Control | Keys.Shift)) != 0);
+                    return;
+                }
+            }
+            base.WndProc(ref m);
+        }
     }
 }

@@ -20,12 +20,15 @@ and can write the files straight into your TF2 folder.
 2. Run it. It finds your TF2 install through Steam and shows the `tf\custom` folder it will install
    into. If it cannot find it, click **Browse...** and pick
    `Steam\steamapps\common\Team Fortress 2\tf\custom`.
-3. Select one or more weapons on the left (Ctrl/Shift-click for several), then click a crosshair
-   on the right. It is assigned immediately and shown in the preview.
+3. Select one or more weapons on the left (Ctrl/Shift-click for several, or click a class name such
+   as **Scout** to select every weapon of that class), then click a crosshair on the right. It is
+   assigned immediately and shown in the preview.
    - **Size** changes how big the crosshair is drawn in game (64 px is what cfg.tf used).
    - **Explosion** lets explosive weapons use one of the smoke-free explosion effects instead of
      the stock one, the same five choices cfg.tf offers.
-   - Weapons you leave alone keep their stock crosshair.
+   - Weapons you leave alone keep their stock crosshair. **Reset selected weapons to stock** under the
+     preview un-assigns the selection; **Reset ALL weapons** at the bottom clears everything so you can
+     start over.
 4. Click **Install into TF2**. The app writes `tf\custom\crosshairs` and removes what it wrote last
    time, so un-assigning a weapon really puts it back to stock. Restart TF2 if it is running.
 5. In TF2, set the crosshair to **None** in the options (that is `cl_crosshair_file ""`),
