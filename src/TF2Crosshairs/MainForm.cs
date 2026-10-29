@@ -233,6 +233,7 @@ namespace TF2Crosshairs
             foreach (var b in new[]
             {
                 MakeButton("Use this crosshair for ALL weapons", ApplyToAll),
+                MakeButton(StockOutlinePreset.Label, ApplyStockOutlinePreset),
                 MakeButton("Reset selected weapons to stock", ClearSelected),
                 MakeButton("Add custom crosshair (.vtf)...", AddCustomCrosshairs),
             })
@@ -645,6 +646,34 @@ namespace TF2Crosshairs
             foreach (var w in weapons) Assign(w, c);
             AssignmentsChanged();
             SetStatus("Assigned " + c.Name + " to all " + weapons.Count + " weapons.");
+        }
+
+        /// <summary>Gives every weapon an outlined copy of its own stock crosshair; weapons that draw none (PDAs, sapper, lunchboxes) go back to stock.</summary>
+        void ApplyStockOutlinePreset()
+        {
+            int set = 0, missing = 0;
+            foreach (var w in weapons)
+            {
+                if (!Assets.HasScript(w.Script) || !StockOutlinePreset.TryGet(Assets.Script(w.Script), out var name, out int size))
+                {
+                    assignments.Remove(w.Script);
+                    continue;
+                }
+                if (FindCrosshair(name) == null) { missing++; continue; }
+                if (!assignments.TryGetValue(w.Script, out var a))
+                {
+                    a = new Assignment { Script = w.Script };
+                    assignments[w.Script] = a;
+                }
+                a.Crosshair = name;
+                a.Size = size;
+                set++;
+            }
+            WithoutEvents(() => gallery.Select(null));
+            UpdatePreview();
+            AssignmentsChanged();
+            SetStatus("Stock-look preset: " + set + " weapons now use an outlined copy of their stock crosshair." +
+                      (missing > 0 ? " " + missing + " skipped because their texture is missing." : ""));
         }
 
         void ClearSelected()

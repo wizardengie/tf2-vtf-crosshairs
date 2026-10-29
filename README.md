@@ -52,6 +52,16 @@ is remembered too.
 **Sharing with friends:** either send them the exe, or click **Save ZIP...** and have them extract
 it into `Team Fortress 2\tf\custom` so they end up with `tf\custom\crosshairs`.
 
+**Stock look, outlined:** the **Preset: stock crosshairs, outlined** button gives every weapon an outlined copy of
+the crosshair it normally draws when the game's crosshair is set to None (brackets with a dot for shotguns and
+pistols, the circle for launchers and melee, the thin cross for sniper rifles and the knife, the medic cross, the
+Minigun's big circle), at the stock size. The textures live in the **TF2 default weapon crosshairs (outlined)**
+group if you want to mix them by hand. PDAs, the sapper and lunchbox items draw no crosshair and stay stock.
+
+**Outlined menu crosshairs:** the **TF2 stock crosshairs (outlined)** group is the
+game's own `crosshair1` to `crosshair7` (the ones the Multiplayer options tab offers) with a one-pixel black
+outline added. The game draws its own at 32 px by default, so set **Size** to 32 to keep them the same size.
+
 **Your own crosshairs:** click **Add custom crosshair (.vtf)...**. 64x64 textures work best. The
 matching `.vmt` material is generated for you and the file is copied into the package.
 
@@ -105,8 +115,8 @@ release when you push a `v*` tag.
 
 | Path | What it is |
 | --- | --- |
-| `src/TF2Crosshairs/` | C# WinForms app on .NET 10. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes. |
-| `assets/crosshairs/*.vtf` | The 98 crosshair textures (Leth's pack, Tob's black brackets, xhairshadow, CPMA, Quake Live) from the cfg.tf repository. |
+| `src/TF2Crosshairs/` | C# WinForms app on .NET 10. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes, `Presets.cs` the stock-look preset. |
+| `assets/crosshairs/*.vtf` | The 110 crosshair textures: outlined copies of the game's default per-weapon crosshairs and of `crosshair1` to `crosshair7`, plus Leth's pack, Tob's black brackets, xhairshadow, CPMA and Quake Live from the cfg.tf repository. |
 | `assets/crosshairs.tsv` | Which pack each texture belongs to (anything unlisted shows up under "Other"). |
 | `assets/scripts/*.txt` | The stock weapon scripts, decrypted from the game's `.ctx` files, used as the base for patching. |
 | `assets/weapons.tsv` | Class, script and weapon names shown in the list. |
