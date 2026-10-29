@@ -6,37 +6,48 @@ but covers every weapon script the game has (the cfg.tf list stopped being updat
 lets you set the crosshair size per weapon, previews the result over a game screenshot,
 and can write the files straight into your TF2 folder.
 
+## Download and install
+
+There is no installer. The app is one portable exe: download it, keep it anywhere (the Downloads
+folder is fine) and run it.
+
+1. Open the [Releases page](https://github.com/wizardengie/tf2-vtf-crosshairs/releases/latest) and
+   download **TF2Crosshairs.exe** ([direct link](https://github.com/wizardengie/tf2-vtf-crosshairs/releases/latest/download/TF2Crosshairs.exe)).
+   It is about 47 MB, needs nothing else installed and works on 64-bit Windows 10 and 11. (Smaller
+   alternative: `TF2Crosshairs-slim.exe`, about 1 MB, which needs the
+   [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0); Windows offers the
+   download link if it is missing.)
+2. Double-click it. Windows may show **"Windows protected your PC"** the first time, because the app
+   is not code-signed. Click **More info**, then **Run anyway**.
+3. Pick weapons on the left and a crosshair on the right, then click **Install into TF2**.
+4. In TF2, open the options and set the crosshair to **None** (`cl_crosshair_file ""`), otherwise the
+   game keeps drawing its own. Restart TF2 if it was running.
+
+Your setup is saved to `%APPDATA%\TF2Crosshairs`, so it is still there next time you open the app.
+
 ![screenshot](docs/screenshot.png)
 
 ## Using it
 
-1. Download an exe from the Releases page (or build it, see below). There are two flavours of the
-   same app:
-   - `TF2Crosshairs.exe` (about 50 MB) is self-contained and needs nothing installed on a 64-bit
-     Windows 10 or 11 machine. This is the one to send to friends.
-   - `TF2Crosshairs-slim.exe` (about 1 MB) needs the
-     [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0); if it is missing,
-     Windows shows a prompt with the download link.
-2. Run it. It finds your TF2 install through Steam and shows the `tf\custom` folder it will install
-   into. If it cannot find it, click **Browse...** and pick
-   `Steam\steamapps\common\Team Fortress 2\tf\custom`.
-3. Select one or more weapons on the left (Ctrl/Shift-click for several, or click a class name such
-   as **Scout** to select every weapon of that class), then click a crosshair on the right. It is
-   assigned immediately and shown in the preview.
-   - **Size** changes how big the crosshair is drawn in game (64 px is what cfg.tf used).
-   - **Explosion** lets explosive weapons use one of the smoke-free explosion effects instead of
-     the stock one, the same five choices cfg.tf offers.
-   - Weapons you leave alone keep their stock crosshair. **Reset selected weapons to stock** under the
-     preview un-assigns the selection; **Reset ALL weapons** at the bottom clears everything so you can
-     start over.
-4. Click **Install into TF2**. The app writes `tf\custom\crosshairs` and removes what it wrote last
-   time, so un-assigning a weapon really puts it back to stock. Restart TF2 if it is running.
-5. In TF2, set the crosshair to **None** in the options (that is `cl_crosshair_file ""`),
-   otherwise the game keeps drawing that one. The crosshair colour still comes from TF2's normal
-   crosshair colour settings.
+The app finds your TF2 install through Steam and shows the `tf\custom` folder it will install into. If
+it cannot find it, click **Browse...** and pick `Steam\steamapps\common\Team Fortress 2\tf\custom`.
 
-Your setup is saved automatically and restored the next time you open the app. The app starts in dark
-mode; the **Dark mode** checkbox at the top right switches to a light theme and is remembered too.
+Select one or more weapons on the left (Ctrl/Shift-click for several, or click a class name such as
+**Scout** to select every weapon of that class), then click a crosshair on the right. It is assigned
+immediately and shown in the preview.
+
+- **Size** changes how big the crosshair is drawn in game (64 px is what cfg.tf used).
+- **Explosion** lets explosive weapons use one of the smoke-free explosion effects instead of the
+  stock one, the same five choices cfg.tf offers.
+- Weapons you leave alone keep their stock crosshair. **Reset selected weapons to stock** under the
+  preview un-assigns the selection; **Reset ALL weapons** at the bottom clears everything so you can
+  start over.
+- **Install into TF2** writes `tf\custom\crosshairs` and removes what it wrote last time, so
+  un-assigning a weapon really puts it back to stock. The crosshair colour still comes from TF2's
+  normal crosshair colour settings.
+
+The app starts in dark mode; the **Dark mode** checkbox at the top right switches to a light theme and
+is remembered too.
 
 **Sharing with friends:** either send them the exe, or click **Save ZIP...** and have them extract
 it into `Team Fortress 2\tf\custom` so they end up with `tf\custom\crosshairs`.
