@@ -62,6 +62,7 @@ namespace TF2Crosshairs
         public MainForm()
         {
             Text = "TF2 Weapon Crosshairs";
+            Icon = Assets.AppIcon();
             Font = new Font("Segoe UI", 9f);
             AutoScaleMode = AutoScaleMode.Dpi;
             StartPosition = FormStartPosition.CenterScreen;

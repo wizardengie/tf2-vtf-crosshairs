@@ -41,6 +41,9 @@ namespace TF2Crosshairs
 
         public static string Script(string script) => Text("scripts/" + script + ".txt");
 
+        /// <summary>The window/taskbar icon. ApplicationIcon only stamps the exe file; a Form shows the default icon until told otherwise.</summary>
+        public static Icon AppIcon() => new(new MemoryStream(Bytes("app.ico")));
+
         public static Image PreviewBackground() => Image.FromStream(new MemoryStream(Bytes("preview_bg.jpg")));
     }
 }

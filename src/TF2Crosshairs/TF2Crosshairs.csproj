@@ -40,6 +40,7 @@
     <EmbeddedResource Include="..\..\assets\crosshairs\*.vtf" LogicalName="crosshairs/%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\assets\scripts\*.txt" LogicalName="scripts/%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\assets\preview_bg.jpg" LogicalName="preview_bg.jpg" />
+    <EmbeddedResource Include="app.ico" LogicalName="app.ico" />
     <EmbeddedResource Include="..\..\assets\weapons.tsv" LogicalName="weapons.tsv" />
     <EmbeddedResource Include="..\..\assets\crosshairs.tsv" LogicalName="crosshairs.tsv" />
   </ItemGroup>
