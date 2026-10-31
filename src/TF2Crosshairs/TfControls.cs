@@ -9,20 +9,37 @@ namespace TF2Crosshairs
     /// <summary>Text and shape helpers shared by the hand-painted controls.</summary>
     static class TfDraw
     {
+        const float OutlinePixels = 1f;
+
         public static void Prepare(Graphics g)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+            g.TextRenderingHint = TextRenderingHint.AntiAlias;
         }
 
-        public static void Text(Graphics g, string text, Font font, Color color, RectangleF r, StringAlignment align = StringAlignment.Near)
+        /// <summary>
+        /// Fills the letters as vector shapes, because GDI+ text rendering leaves the TF2 fonts jagged at small sizes
+        /// in every mode. Outlined text, which is TF2 Build, sits on a 1px black edge.
+        /// </summary>
+        public static void Text(Graphics g, string text, Font font, Color color, RectangleF r, StringAlignment align = StringAlignment.Near,
+            bool wrap = false, StringAlignment lines = StringAlignment.Center, bool outlined = false)
         {
-            using var brush = new SolidBrush(color);
-            using var format = new StringFormat(StringFormatFlags.NoWrap)
+            using var format = new StringFormat(wrap ? StringFormatFlags.LineLimit : StringFormatFlags.NoWrap)
             {
-                Alignment = align, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter, HotkeyPrefix = HotkeyPrefix.None,
+                Alignment = align, LineAlignment = lines, Trimming = StringTrimming.EllipsisCharacter, HotkeyPrefix = HotkeyPrefix.None,
             };
-            g.DrawString(text, font, brush, r, format);
+            using var path = new GraphicsPath();
+            path.AddString(text, font.FontFamily, (int)font.Style, font.SizeInPoints * g.DpiY / 72f, r, format);
+            var offset = g.PixelOffsetMode;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            if (outlined)
+            {
+                // a pen straddles the edge and the fill covers its inner half, so twice the width shows outside the letters
+                using var pen = new Pen(Color.Black, 2 * OutlinePixels * g.DpiY / 96f) { LineJoin = LineJoin.Round };
+                g.DrawPath(pen, path);
+            }
+            using (var brush = new SolidBrush(color)) g.FillPath(brush, path);
+            g.PixelOffsetMode = offset;
         }
     }
 
@@ -31,7 +48,7 @@ namespace TF2Crosshairs
 
     enum TfTextRole { Normal, Muted, Accent }
 
-    /// <summary>Label in a TF2 font. Compatible text rendering is GDI+, which is what those fonts need.</summary>
+    /// <summary>Label in a TF2 font, drawn through TfDraw. Compatible text rendering keeps its measuring in GDI+ as well.</summary>
     sealed class TfLabel : Label
     {
         public bool IsHeading;
@@ -45,6 +62,14 @@ namespace TF2Crosshairs
         }
 
         public void ApplyFont() => Font = IsHeading ? Tf2Fonts.Heading(Points) : Tf2Fonts.Body(Points, TextStyle);
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            TfDraw.Prepare(e.Graphics);
+            var area = new RectangleF(Padding.Left, Padding.Top, Width - Padding.Horizontal, Height - Padding.Vertical);
+            bool middle = TextAlign is ContentAlignment.MiddleLeft or ContentAlignment.MiddleCenter or ContentAlignment.MiddleRight;
+            TfDraw.Text(e.Graphics, Text, Font, ForeColor, area, wrap: true, lines: middle ? StringAlignment.Center : StringAlignment.Near, outlined: IsHeading);
+        }
     }
 
     enum TfButtonKind { Normal, Primary, Danger }
@@ -146,12 +171,12 @@ namespace TF2Crosshairs
             if (SubText is { } sub)
             {
                 float mid = face.Y + face.Height * 0.60f;
-                TfDraw.Text(g, label, Fitted(g, label), text, new RectangleF(0, face.Y, Width, mid - face.Y), StringAlignment.Center);
+                TfDraw.Text(g, label, Fitted(g, label), text, new RectangleF(0, face.Y, Width, mid - face.Y), StringAlignment.Center, outlined: true);
                 TfDraw.Text(g, sub, Tf2Fonts.Body(8.5f), p.Fore, new RectangleF(0, mid - 1, Width, face.Bottom - mid), StringAlignment.Center);
             }
             else
             {
-                TfDraw.Text(g, label, Fitted(g, label), text, face, StringAlignment.Center);
+                TfDraw.Text(g, label, Fitted(g, label), text, face, StringAlignment.Center, outlined: true);
             }
 
             if (Focused && ShowFocusCues)
@@ -183,6 +208,7 @@ namespace TF2Crosshairs
             var p = Theme.Current;
             using var fill = new SolidBrush((e.State & DrawItemState.Selected) != 0 ? p.Accent : p.Input);
             e.Graphics.FillRectangle(fill, e.Bounds);
+            TfDraw.Prepare(e.Graphics);
             TfDraw.Text(e.Graphics, GetItemText(Items[e.Index]) ?? "", Font, p.Fore, TextArea(e.Bounds));
         }
 

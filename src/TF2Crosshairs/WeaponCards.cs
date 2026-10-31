@@ -223,7 +223,7 @@ namespace TF2Crosshairs
 
                 float x = thumb.Right + inset, w = b.Right - inset - x;
                 float titleH = b.Height * 0.40f, lineH = b.Height * 0.24f, y = b.Y + b.Height * 0.06f;
-                TfDraw.Text(g, card.Title.ToUpperInvariant(), Tf2Fonts.Heading(12.5f), p.Fore, new RectangleF(x, y, w, titleH));
+                TfDraw.Text(g, card.Title.ToUpperInvariant(), Tf2Fonts.Heading(12.5f), p.Fore, new RectangleF(x, y, w, titleH), outlined: true);
                 TfDraw.Text(g, card.Also, Tf2Fonts.Body(9f), on ? p.Fore : p.Muted, new RectangleF(x, y + titleH, w, lineH));
                 TfDraw.Text(g, card.Info, Tf2Fonts.Body(9.5f, FontStyle.Bold), card.Thumb != null || on ? p.Fore : p.Muted, new RectangleF(x, y + titleH + lineH, w, lineH));
             }
