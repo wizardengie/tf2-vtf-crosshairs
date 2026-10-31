@@ -30,26 +30,25 @@ Your setup is saved to `%APPDATA%\TF2Crosshairs`, so it is still there next time
 ## Using it
 
 The app finds your TF2 install through Steam and shows the `tf\custom` folder it will install into. If
-it cannot find it, click **Browse...** and pick `Steam\steamapps\common\Team Fortress 2\tf\custom`.
+it cannot find it, click **Browse** and pick `Steam\steamapps\common\Team Fortress 2\tf\custom`.
 
-Select one or more weapons on the left (Ctrl/Shift-click for several, or click a class name such as
-**Scout** to select every weapon of that class), then click a crosshair on the right. It is assigned
-immediately and shown in the preview.
+Pick a class tab, select one or more weapons on the left (Ctrl/Shift-click for several, or **Select
+all** for the whole class), then click a crosshair on the right. It is assigned immediately and shown
+in the preview. The search box looks through every class.
 
 - **Size** changes how big the crosshair is drawn in game (64 px is what cfg.tf used).
 - **Explosion** lets explosive weapons use one of the smoke-free explosion effects instead of the
   stock one, the same five choices cfg.tf offers.
-- Weapons you leave alone keep their stock crosshair. **Reset selected weapons to stock** under the
-  preview un-assigns the selection; **Reset ALL weapons** at the bottom clears everything so you can
-  start over.
+- Weapons you leave alone keep their stock crosshair. **Reset selected** under the preview un-assigns
+  the selection; **Reset all weapons** at the bottom clears everything so you can start over.
 - **Install into TF2** writes `tf\custom\crosshairs` and removes what it wrote last time, so
   un-assigning a weapon really puts it back to stock. The crosshair colour still comes from TF2's
   normal crosshair colour settings.
 
-The app starts in dark mode; the **Dark mode** checkbox at the top right switches to a light theme and
-is remembered too.
+The **RED** and **BLU** buttons at the top right switch the team colours and are remembered too. The app
+uses TF2's own fonts, read from your install; Segoe UI stands in if it cannot find the game.
 
-**Sharing with friends:** either send them the exe, or click **Save ZIP...** and have them extract
+**Sharing with friends:** either send them the exe, or click **Save ZIP** and have them extract
 it into `Team Fortress 2\tf\custom` so they end up with `tf\custom\crosshairs`.
 
 **Stock look, outlined:** the **Preset: stock crosshairs, outlined** button gives every weapon an outlined copy of
@@ -115,7 +114,7 @@ release when you push a `v*` tag.
 
 | Path | What it is |
 | --- | --- |
-| `src/TF2Crosshairs/` | C# WinForms app on .NET 10. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `Theme.cs` the dark/light palettes, `Presets.cs` the stock-look preset. |
+| `src/TF2Crosshairs/` | C# WinForms app on .NET 10. `Vtf.cs` decodes textures for the preview, `Packager.cs` writes the package, `Tf2Locator.cs` finds the game, `MainForm.cs` is the UI, `Gallery.cs` the hand-painted crosshair grid, `WeaponCards.cs` the weapon cards, `TfControls.cs` the painted buttons and inputs, `Tf2Fonts.cs` loads the game's fonts, `Theme.cs` the RED and BLU palettes, `Presets.cs` the stock-look preset. |
 | `assets/crosshairs/*.vtf` | The 110 crosshair textures: outlined copies of the game's default per-weapon crosshairs and of `crosshair1` to `crosshair7`, plus Leth's pack, Tob's black brackets, xhairshadow, CPMA and Quake Live from the cfg.tf repository. |
 | `assets/crosshairs.tsv` | Which pack each texture belongs to (anything unlisted shows up under "Other"). |
 | `assets/scripts/*.txt` | The stock weapon scripts, decrypted from the game's `.ctx` files, used as the base for patching. |

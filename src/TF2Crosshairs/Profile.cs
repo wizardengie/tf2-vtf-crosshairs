@@ -9,7 +9,7 @@ namespace TF2Crosshairs
     public sealed class Profile
     {
         public string? TfFolder;
-        public bool Dark = true;
+        public string Team = Theme.Red.Team;
         public readonly List<Assignment> Assignments = [];
         /// <summary>Custom crosshairs the user imported: name -> original .vtf path.</summary>
         public readonly List<KeyValuePair<string, string>> CustomCrosshairs = [];
@@ -31,8 +31,8 @@ namespace TF2Crosshairs
                     case "tf":
                         if (parts.Length > 1) p.TfFolder = parts[1];
                         break;
-                    case "dark":
-                        if (parts.Length > 1) p.Dark = parts[1] != "0";
+                    case "team":
+                        if (parts.Length > 1) p.Team = parts[1];
                         break;
                     case "custom":
                         if (parts.Length > 2) p.CustomCrosshairs.Add(new(parts[1], parts[2]));
@@ -55,7 +55,7 @@ namespace TF2Crosshairs
         {
             var sb = new StringBuilder();
             if (!string.IsNullOrEmpty(TfFolder)) sb.Append("tf\t").Append(TfFolder).Append("\r\n");
-            sb.Append("dark\t").Append(Dark ? "1" : "0").Append("\r\n");
+            sb.Append("team\t").Append(Team).Append("\r\n");
             foreach (var c in CustomCrosshairs) sb.Append("custom\t").Append(c.Key).Append('\t').Append(c.Value).Append("\r\n");
             foreach (var a in Assignments) sb.Append("weapon\t").Append(a.ToTsv()).Append("\r\n");
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);

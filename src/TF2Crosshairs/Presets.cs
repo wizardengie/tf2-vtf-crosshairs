@@ -11,7 +11,7 @@ namespace TF2Crosshairs
     /// </summary>
     public static class StockOutlinePreset
     {
-        public const string Label = "Preset: stock crosshairs, outlined";
+        public const string Label = "Preset: stock, outlined";
 
         /// <summary>
         /// The regions of materials/sprites/crosshairs the stock scripts point at, and the bundled outlined copy of each.

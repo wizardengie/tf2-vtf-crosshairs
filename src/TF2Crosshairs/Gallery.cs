@@ -16,12 +16,12 @@ namespace TF2Crosshairs
     }
 
     /// <summary>
-    /// Scrollable grid of thumbnails with a heading per group. Painted by hand because a ListView's
-    /// group headers cannot be recoloured, which makes them unreadable on a dark background.
+    /// Scrollable grid of picture-only thumbnails with a heading per group; hovering a tile shows its name.
+    /// Painted by hand because a ListView's group headers cannot be recoloured.
     /// </summary>
     public sealed class Gallery : ScrollableControl
     {
-        const int Tile = 64, CellW = 108, CellH = 98, HeaderH = 30, Pad = 10;
+        const int TileSize = 64, CellSize = 76, HeadingH = 30, Margin_ = 10;
 
         readonly List<GalleryItem> items = [];
         readonly List<(string Text, Rectangle Bounds)> headers = [];
@@ -37,6 +37,12 @@ namespace TF2Crosshairs
             AutoScroll = true;
             TabStop = true;
         }
+
+        int Tile => LogicalToDeviceUnits(TileSize);
+        int CellW => LogicalToDeviceUnits(CellSize);
+        int CellH => LogicalToDeviceUnits(CellSize);
+        int HeaderH => LogicalToDeviceUnits(HeadingH);
+        int Pad => LogicalToDeviceUnits(Margin_);
 
         public GalleryItem? SelectedItem => selected;
 
@@ -141,12 +147,12 @@ namespace TF2Crosshairs
             var p = Theme.Current;
             var g = e.Graphics;
             g.Clear(p.Panel);
-            // TextRenderer draws with GDI and ignores Graphics transforms, so scroll by offsetting the rectangles.
+            TfDraw.Prepare(g);
+            // scroll by offsetting the rectangles rather than a Graphics transform, to keep the text pixel-aligned
             int oy = AutoScrollPosition.Y;
             int top = -oy, bottom = top + ClientSize.Height;
             bool OnScreen(Rectangle r) => r.Bottom >= top && r.Top <= bottom;
 
-            using (var bold = new Font(Font, FontStyle.Bold))
             using (var line = new Pen(p.Border))
             {
                 foreach (var (text, bounds) in headers)
@@ -154,11 +160,12 @@ namespace TF2Crosshairs
                     if (!OnScreen(bounds)) continue;
                     var r = bounds;
                     r.Offset(0, oy);
-                    TextRenderer.DrawText(g, text, bold, r, p.GroupText, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+                    TfDraw.Text(g, text, Tf2Fonts.Body(10f, FontStyle.Bold), p.Fore, r);
                     g.DrawLine(line, r.Left, r.Bottom - 5, r.Right, r.Bottom - 5);
                 }
             }
 
+            int inset = (CellW - Tile) / 2;
             foreach (var it in items)
             {
                 if (!OnScreen(it.Bounds)) continue;
@@ -168,18 +175,15 @@ namespace TF2Crosshairs
                 if (sel || ReferenceEquals(it, hover))
                 {
                     using var fill = new SolidBrush(sel ? p.Accent : p.ButtonHover);
-                    g.FillRectangle(fill, new Rectangle(b.X + 2, b.Y, b.Width - 4, b.Height - 2));
+                    g.FillRectangle(fill, b);
                 }
-                var tile = new Rectangle(b.X + (CellW - Tile) / 2, b.Y + 4, Tile, Tile);
+                var tile = new Rectangle(b.X + inset, b.Y + inset, Tile, Tile);
                 g.DrawImage(it.Image, tile);
                 if (sel)
                 {
-                    using var pen = new Pen(Color.White, 2);
+                    using var pen = new Pen(p.Fore, 2);
                     g.DrawRectangle(pen, tile.X - 1, tile.Y - 1, tile.Width + 1, tile.Height + 1);
                 }
-                var label = new Rectangle(b.X, tile.Bottom + 3, CellW, b.Height - Tile - 8);
-                TextRenderer.DrawText(g, it.Name, Font, label, sel ? Color.White : p.Fore,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine);
             }
         }
     }
